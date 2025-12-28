@@ -1,35 +1,109 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import store from './store/store';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import PrivateRoute from './routes/PrivateRoute';
+
+// Pages
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ChambresPage from './pages/ChambresPage';
+import HotelsPage from './pages/HotelsPage';
+import HotelDetailsPage from './pages/HotelDetailsPage';
+import ReservationsPage from './pages/ReservationsPage';
+import FacturesPage from './pages/FacturesPage';
+import ClientDashboard from './pages/ClientDashboard';
+import UserProfile from './pages/UserProfile';
+import AdminPage from './pages/AdminPage';
+
+import './index.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Provider store={store}>
+      <BrowserRouter>
+        <ToastContainer 
+          position="top-right"
+          autoClose={3500}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="grow pt-20">
+            <Routes>
+              {/* Routes publiques - Visiteurs */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/hotels" element={<HotelsPage />} />
+              <Route path="/hotels/:id" element={<HotelDetailsPage />} />
+              <Route path="/chambres" element={<ChambresPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+
+              {/* Routes protégées - Client */}
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute requiredRole="client">
+                    <ClientDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute requiredRole="client">
+                    <UserProfile />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/reservations"
+                element={
+                  <PrivateRoute requiredRole="client">
+                    <ReservationsPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/factures"
+                element={
+                  <PrivateRoute requiredRole="client">
+                    <FacturesPage />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* Routes protégées - Admin */}
+              <Route
+                path="/admin"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <AdminPage />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* 404 */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </BrowserRouter>
+    </Provider>
+  );
 }
 
-export default App
+export default App;

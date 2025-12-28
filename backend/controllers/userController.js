@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
     user = new User({ nom, email, password, role });
     await user.save();
 
-    // Créer le Token JWT [cite: 55]
+    // Créer le Token JWT
     const payload = { user: { id: user.id, role: user.role } };
 
     jwt.sign(
@@ -24,7 +24,15 @@ exports.register = async (req, res) => {
       { expiresIn: '1h' },
       (err, token) => {
         if (err) throw err;
-        res.status(201).json({ token });
+        res.status(201).json({ 
+          token,
+          user: { 
+            id: user._id, 
+            nom: user.nom,
+            email: user.email, 
+            role: user.role 
+          }
+        });
       }
     );
   } catch (err) {
@@ -52,7 +60,15 @@ exports.login = async (req, res) => {
       { expiresIn: '1h' },
       (err, token) => {
         if (err) throw err;
-        res.json({ token });
+        res.json({ 
+          token,
+          user: { 
+            id: user._id, 
+            nom: user.nom,
+            email: user.email, 
+            role: user.role 
+          }
+        });
       }
     );
   } catch (err) {
