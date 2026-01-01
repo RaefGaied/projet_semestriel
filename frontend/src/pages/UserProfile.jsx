@@ -1,11 +1,13 @@
 import { useState } from "react"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
+import { updateProfile, changePassword } from "../store/authSlice"
 import { User, Mail, Lock, Phone, Calendar, MapPin, Edit2, Save, X } from "lucide-react"
 
 const UserProfile = () => {
   const navigate = useNavigate()
-  const { user } = useSelector((state) => state.auth)
+  const dispatch = useDispatch()
+  const { user, loading } = useSelector((state) => state.auth)
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
 
@@ -34,8 +36,7 @@ const UserProfile = () => {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault()
-    // TODO: API call to update profile
-    console.log("Profil mis à jour:", formData)
+    await dispatch(updateProfile(formData))
     setIsEditing(false)
   }
 
@@ -45,10 +46,15 @@ const UserProfile = () => {
       alert("Les mots de passe ne correspondent pas!")
       return
     }
-    // TODO: API call to change password
-    console.log("Mot de passe changé")
-    setShowPasswordForm(false)
-    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
+    const result = await dispatch(changePassword({
+      ancienMotDePasse: passwordForm.currentPassword,
+      nouveauMotDePasse: passwordForm.newPassword
+    }))
+    if (!result.error) {
+      setShowPasswordForm(false)
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      alert("Mot de passe changé avec succès!")
+    }
   }
 
   const handleCancel = () => {

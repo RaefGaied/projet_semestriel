@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 
 const chambreSchema = new mongoose.Schema({
-  numero: { type: String, required: true, unique: true },
+  hotel: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Hotel',
+    required: true
+  },
+  numero: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['SIMPLE', 'DOUBLE', 'SUITE'], // Tiré de <<enumeration>> TypeChambre
+    enum: ['SIMPLE', 'DOUBLE', 'SUITE'],
     required: true 
   },
   capacite: { type: Number, required: true },
@@ -12,9 +17,12 @@ const chambreSchema = new mongoose.Schema({
   vue: { type: String },
   statut: { 
     type: String, 
-    enum: ['DISPONIBLE', 'OCCUPEE', 'MAINTENANCE'], // Tiré de <<enumeration>> StatutChambre
+    enum: ['DISPONIBLE', 'OCCUPEE', 'MAINTENANCE'],
     default: 'DISPONIBLE' 
   }
 }, { timestamps: true });
+
+// Compound unique index - numéro unique par hôtel (pas globalement)
+chambreSchema.index({ hotel: 1, numero: 1 }, { unique: true });
 
 module.exports = mongoose.model('Chambre', chambreSchema);

@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ChambresPage from './pages/ChambresPage';
 import HotelsPage from './pages/HotelsPage';
+import AddHotelPage from './pages/AddHotelPage';
 import HotelDetailsPage from './pages/HotelDetailsPage';
 import ReservationsPage from './pages/ReservationsPage';
 import FacturesPage from './pages/FacturesPage';
@@ -91,6 +92,14 @@ function App() {
                 element={
                   <PrivateRoute requiredRole="admin">
                     <AdminPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/hotels/add"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <AddHotelPage />
                   </PrivateRoute>
                 }
               />

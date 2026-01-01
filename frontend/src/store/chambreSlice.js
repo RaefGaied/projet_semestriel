@@ -3,9 +3,21 @@ import { chambreService } from '../services/chambreService';
 
 export const fetchChambres = createAsyncThunk(
   'chambres/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await chambreService.getAll();
+      const response = await chambreService.getAll(filters);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors du chargement');
+    }
+  }
+);
+
+export const fetchChambresByHotel = createAsyncThunk(
+  'chambres/fetchByHotel',
+  async (hotelId, { rejectWithValue }) => {
+    try {
+      const response = await chambreService.getByHotel(hotelId);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Erreur lors du chargement');
@@ -57,6 +69,18 @@ export const deleteChambre = createAsyncThunk(
       return id;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Erreur lors de la suppression');
+    }
+  }
+);
+
+export const updateChambreStatus = createAsyncThunk(
+  'chambres/updateStatus',
+  async ({ id, statut }, { rejectWithValue }) => {
+    try {
+      const response = await chambreService.updateStatus(id, statut);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors de la mise à jour du statut');
     }
   }
 );

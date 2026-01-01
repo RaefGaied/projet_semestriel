@@ -1,12 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { genererFacture, getFactureByReservation } = require('../controllers/factureController');
+const { 
+  genererFacture, 
+  getFactureByReservation,
+  getMesFactures,
+  getAllFactures,
+  updateFacture
+} = require('../controllers/factureController');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
-// Seul l'admin génère les factures
-router.post('/', [auth, admin], genererFacture);
-// Le client ou l'admin peut voir la facture
+// Client routes
+router.get('/me', auth, getMesFactures);
 router.get('/:resId', auth, getFactureByReservation);
+
+// Admin routes
+router.post('/', [auth, admin], genererFacture);
+router.get('/', [auth, admin], getAllFactures);
+router.put('/:id', [auth, admin], updateFacture);
 
 module.exports = router;

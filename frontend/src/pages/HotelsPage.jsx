@@ -1,54 +1,21 @@
-import { MapPin, Star, Phone, Mail } from "lucide-react"
-import { Link } from "react-router-dom"
+import { useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { MapPin, Star, Phone, Mail, Plus } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { fetchHotels } from "../store/hotelSlice"
+import Loading from "../components/Loading"
 
 const HotelsPage = () => {
-  // Données d'exemple des hôtels
-  const hotels = [
-    {
-      id: 1,
-      name: "Grand Hôtel Luxe",
-      location: "Paris, France",
-      stars: 5,
-      rooms: 150,
-      description: "Hôtel 5 étoiles avec services premium et vue panoramique",
-      phone: "+33 1 23 45 67 89",
-      email: "contact@grandhote.fr",
-      image: "🏨",
-    },
-    {
-      id: 2,
-      name: "Hôtel Confort Plus",
-      location: "Lyon, France",
-      stars: 4,
-      rooms: 100,
-      description: "Hôtel 4 étoiles offrant un excellent rapport qualité-prix",
-      phone: "+33 4 56 78 90 12",
-      email: "contact@hotelconfort.fr",
-      image: "🏩",
-    },
-    {
-      id: 3,
-      name: "Hôtel Central",
-      location: "Marseille, France",
-      stars: 4,
-      rooms: 85,
-      description: "Idéalement situé au cœur du centre-ville avec parking gratuit",
-      phone: "+33 4 91 23 45 67",
-      email: "contact@hotelcentral.fr",
-      image: "🏨",
-    },
-    {
-      id: 4,
-      name: "Auberge du Voyage",
-      location: "Bordeaux, France",
-      stars: 3,
-      rooms: 60,
-      description: "Auberge chaleureuse idéale pour les voyageurs",
-      phone: "+33 5 56 78 90 12",
-      email: "contact@aubergeduvoyage.fr",
-      image: "🏩",
-    },
-  ]
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { hotels, loading } = useSelector((state) => state.hotels)
+  const { user } = useSelector((state) => state.auth)
+
+  useEffect(() => {
+    dispatch(fetchHotels())
+  }, [dispatch])
+
+  if (loading) return <Loading fullScreen />
 
   const renderStars = (stars) => {
     return (
@@ -68,11 +35,24 @@ const HotelsPage = () => {
     <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-3 text-gray-900">Nos Hôtels Partenaires</h1>
-          <p className="text-lg text-gray-600">
-            Découvrez nos établissements partenaires offrant les meilleures expériences de séjour
-          </p>
+        <div className="mb-12 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-3 text-gray-900">Nos Hôtels Partenaires</h1>
+            <p className="text-lg text-gray-600">
+              Découvrez nos établissements partenaires offrant les meilleures expériences de séjour
+            </p>
+          </div>
+          
+          {/* Bouton Admin */}
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate('/hotels/add')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition"
+            >
+              <Plus size={20} />
+              Ajouter un hôtel
+            </button>
+          )}
         </div>
 
         {/* Filtres */}
@@ -98,7 +78,7 @@ const HotelsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {hotels.map((hotel) => (
             <div
-              key={hotel.id}
+              key={hotel._id}
               className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition duration-300"
             >
               {/* Image */}
@@ -110,31 +90,28 @@ const HotelsPage = () => {
               <div className="p-6">
                 {/* Titre et note */}
                 <div className="mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{hotel.name}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{hotel.nom}</h3>
                   <div className="flex items-center gap-2 mb-2">
-                    {renderStars(hotel.stars)}
-                    <span className="text-sm text-gray-600">({hotel.stars} étoiles)</span>
+                    {renderStars(hotel.etoiles || 3)}
+                    <span className="text-sm text-gray-600">({hotel.etoiles || 3} étoiles)</span>
                   </div>
                 </div>
 
                 {/* Localisation */}
                 <div className="flex items-center gap-2 text-gray-600 mb-3">
                   <MapPin size={18} className="text-blue-600" />
-                  <span>{hotel.location}</span>
+                  <span>{hotel.ville}, {hotel.adresse}</span>
                 </div>
 
                 {/* Description */}
-                <p className="text-gray-600 text-sm mb-4">{hotel.description}</p>
+                <p className="text-gray-600 text-sm mb-4">{hotel.description || 'Hôtel de qualité'}</p>
 
                 {/* Infos */}
                 <div className="space-y-2 mb-6 pb-6 border-b border-gray-200">
                   <div className="flex items-center gap-2 text-gray-700 text-sm">
-                    <span className="font-semibold text-gray-900">{hotel.rooms} chambres</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700 text-sm">
                     <Phone size={16} className="text-blue-600" />
-                    <a href={`tel:${hotel.phone}`} className="hover:text-blue-600">
-                      {hotel.phone}
+                    <a href={`tel:${hotel.telephone}`} className="hover:text-blue-600">
+                      {hotel.telephone}
                     </a>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700 text-sm">
@@ -148,13 +125,13 @@ const HotelsPage = () => {
                 {/* Bouton */}
                 <div className="flex gap-2">
                   <Link
-                    to={`/hotels/${hotel.id}`}
+                    to={`/hotels/${hotel._id}`}
                     className="flex-1 inline-block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
                   >
                     Détails
                   </Link>
                   <Link
-                    to="/chambres"
+                    to={`/chambres?hotel=${hotel._id}`}
                     className="flex-1 inline-block text-center bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-2 rounded-lg transition"
                   >
                     Chambres
@@ -164,6 +141,8 @@ const HotelsPage = () => {
             </div>
           ))}
         </div>
+
+
       </div>
     </div>
   )

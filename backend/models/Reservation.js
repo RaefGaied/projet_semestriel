@@ -11,14 +11,23 @@ const reservationSchema = new mongoose.Schema({
     ref: 'Chambre', 
     required: true 
   },
-  datedebut: { type: Date, required: true },
-  datefin: { type: Date, required: true },
- 
-statut: { 
-  type: String, 
-  enum: ['EN_ATTENTE', 'VALIDEE', 'ANNULEE', 'TERMINEE'], 
-  default: 'EN_ATTENTE' 
-}
+  datedebut: { 
+    type: Date, 
+    required: true 
+  },
+  datefin: { 
+    type: Date, 
+    required: true 
+  },
+  services: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service'
+  }],
+  statut: { 
+    type: String, 
+    enum: ['EN_ATTENTE', 'VALIDEE', 'ANNULEE', 'TERMINEE'], 
+    default: 'EN_ATTENTE' 
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Reservation', reservationSchema);

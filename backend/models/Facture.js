@@ -7,10 +7,27 @@ const factureSchema = new mongoose.Schema({
     unique: true, 
     required: true 
   },
-  montantTotal: { type: Number, required: true },
-  estPayee: { type: Boolean, default: false },
-  dateEmission: { type: Date, default: Date.now },
-  methodePaiement: { type: String, enum: ['ESPECES', 'CARTE', 'VIREMENT'], default: 'ESPECES' }
+  montantTotal: { 
+    type: Number, 
+    required: true 
+  },
+  dateEmission: { 
+    type: Date, 
+    default: Date.now 
+  },
+  dateEcheance: {
+    type: Date,
+    required: true
+  },
+  statut: {
+    type: String,
+    enum: ['EN_ATTENTE', 'PAYEE', 'PARTIELLE', 'REMBOURSEE'],
+    default: 'EN_ATTENTE'
+  },
+  paiement: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Paiement'
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Facture', factureSchema);

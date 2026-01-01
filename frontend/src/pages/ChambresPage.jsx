@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom"
 import { fetchChambres } from "../store/chambreSlice"
+import { createReservation } from "../store/reservationSlice"
+import { toast } from "react-toastify"
 import Loading from "../components/Loading"
 import { Search, MapPin } from "lucide-react"
 
 const ChambresPage = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { chambres, loading } = useSelector((state) => state.chambres)
   const { user } = useSelector((state) => state.auth)
   const [filtered, setFiltered] = useState([])
@@ -18,6 +22,7 @@ const ChambresPage = () => {
     dateDepart: "",
   })
   const [nights, setNights] = useState(0)
+  const [reserving, setReserving] = useState(false)
 
   // Calculer le nombre de nuits
   const calculateNights = (arrival, departure) => {
@@ -60,14 +65,47 @@ const ChambresPage = () => {
     setFiltered(result)
   }, [chambres, filters])
 
-  const handleReserver = (chambre) => {
+  const handleReserver = async (chambre) => {
     if (!user) {
-      // Rediriger vers la page de connexion
-      window.location.href = "/login"
+      toast.warning("Veuillez vous connecter pour réserver")
+      navigate("/login")
       return
     }
-    // La réservation sera gérée depuis le formulaire de réservation
-    alert(`Réservation de la chambre ${chambre.numero} - Complétez le formulaire`)
+
+    // Vérifier que les dates sont sélectionnées
+    if (!filters.dateArrivee || !filters.dateDepart) {
+      toast.error("Veuillez sélectionner les dates d'arrivée et de départ")
+      return
+    }
+
+    // Vérifier que la date de départ est après la date d'arrivée
+    if (new Date(filters.dateDepart) <= new Date(filters.dateArrivee)) {
+      toast.error("La date de départ doit être après la date d'arrivée")
+      return
+    }
+
+    setReserving(true)
+    try {
+      const reservationData = {
+        chambre: chambre._id,
+        dateArrivee: filters.dateArrivee,
+        dateDepart: filters.dateDepart,
+        nombrePersonnes: chambre.capacite,
+      }
+
+      await dispatch(createReservation(reservationData)).unwrap()
+      
+      toast.success(`Réservation créée avec succès pour la chambre ${chambre.numero}`)
+      
+      // Rediriger vers la page des réservations
+      setTimeout(() => {
+        navigate("/reservations")
+      }, 1500)
+    } catch (error) {
+      toast.error(error.message || "Erreur lors de la réservation")
+    } finally {
+      setReserving(false)
+    }
   }
 
   if (loading) return <Loading fullScreen />
@@ -221,9 +259,23 @@ const ChambresPage = () => {
                 <div className="p-6">
                   <div className="mb-4">
                     <h3 className="text-xl font-bold text-gray-900 mb-1">Chambre {chambre.numero}</h3>
-                    <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                      {chambre.type}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                        {chambre.type}
+                      </div>
                     </div>
+                    {/* Hôtel info */}
+                    {chambre.hotel && (
+                      <div className="flex items-start gap-2 mt-2 text-sm text-gray-600">
+                        <MapPin size={14} className="mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-gray-900">{chambre.hotel.nom}</p>
+                          {chambre.hotel.ville && (
+                            <p className="text-xs">{chambre.hotel.ville}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3 mb-6">
@@ -259,14 +311,18 @@ const ChambresPage = () => {
 
                   <button
                     onClick={() => handleReserver(chambre)}
-                    disabled={chambre.statut !== "DISPONIBLE"}
+                    disabled={chambre.statut !== "DISPONIBLE" || reserving || !filters.dateArrivee || !filters.dateDepart}
                     className={`w-full font-semibold py-2 rounded-lg transition ${
-                      chambre.statut === "DISPONIBLE"
+                      chambre.statut === "DISPONIBLE" && filters.dateArrivee && filters.dateDepart && !reserving
                         ? "bg-blue-600 hover:bg-blue-700 text-white"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    {chambre.statut === "DISPONIBLE" ? "Réserver" : "Non disponible"}
+                    {reserving 
+                      ? "Réservation..." 
+                      : chambre.statut === "DISPONIBLE" 
+                        ? (!filters.dateArrivee || !filters.dateDepart ? "Sélectionnez les dates" : "Réserver")
+                        : "Non disponible"}
                   </button>
                 </div>
               </div>

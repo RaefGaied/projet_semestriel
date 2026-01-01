@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchChambres, createChambre, updateChambre, deleteChambre } from "../store/chambreSlice"
-import { fetchMesReservations } from "../store/reservationSlice"
+import { fetchAllReservations, validateReservation, cancelReservation } from "../store/reservationSlice"
+import { fetchHotels, createHotel, updateHotel, deleteHotel } from "../store/hotelSlice"
+import { fetchServices, createService, updateService, toggleService, deleteService } from "../store/serviceSlice"
 import Loading from "../components/Loading"
-import { Plus, Edit2, Trash2, Check, X, Download, Users, Home, Utensils, FileText } from "lucide-react"
+import { Plus, Edit2, Trash2, Check, X, Download, Users, Home, Utensils, FileText, Hotel } from "lucide-react"
 
 const AdminPage = () => {
   const dispatch = useDispatch()
   const { chambres, loading: chambresLoading } = useSelector((state) => state.chambres)
   const { reservations, loading: reservationsLoading } = useSelector((state) => state.reservations)
+  const { hotels, loading: hotelsLoading } = useSelector((state) => state.hotels)
+  const { services, loading: servicesLoading } = useSelector((state) => state.services)
+  const { user } = useSelector((state) => state.auth)
 
   const [activeTab, setActiveTab] = useState("dashboard")
   const [showForm, setShowForm] = useState(false)
@@ -20,28 +25,37 @@ const AdminPage = () => {
     capacite: 1,
     prix: 0,
     statut: "DISPONIBLE",
+    hotel: "",
   })
 
-  // Services state
-  const [services, setServices] = useState([
-    { id: 1, name: "WiFi gratuit", prix: 0, actif: true },
-    { id: 2, name: "Petit-déjeuner", prix: 15, actif: true },
-    { id: 3, name: "Parking privé", prix: 10, actif: true },
-    { id: 4, name: "Spa & Wellness", prix: 50, actif: true },
-  ])
-  const [showServiceForm, setShowServiceForm] = useState(false)
-  const [serviceForm, setServiceForm] = useState({ name: "", prix: 0 })
+  // Hotel form state
+  const [showHotelForm, setShowHotelForm] = useState(false)
+  const [editingHotelId, setEditingHotelId] = useState(null)
+  const [hotelForm, setHotelForm] = useState({
+    nom: "",
+    adresse: "",
+    ville: "",
+    telephone: "",
+    email: "",
+    description: "",
+    etoiles: 3,
+  })
 
-  // Clients state
-  const [clients, setClients] = useState([
-    { id: 1, nom: "Jean Dupont", email: "jean@example.com", reservations: 3, statut: "actif" },
-    { id: 2, nom: "Marie Martin", email: "marie@example.com", reservations: 1, statut: "actif" },
-    { id: 3, nom: "Pierre Bernard", email: "pierre@example.com", reservations: 5, statut: "inactif" },
-  ])
+  // Service form state
+  const [showServiceForm, setShowServiceForm] = useState(false)
+  const [editingServiceId, setEditingServiceId] = useState(null)
+  const [serviceForm, setServiceForm] = useState({
+    nom: "",
+    prix: 0,
+    hotel: "",
+    description: "",
+  })
 
   useEffect(() => {
     dispatch(fetchChambres())
-    dispatch(fetchMesReservations())
+    dispatch(fetchAllReservations())
+    dispatch(fetchHotels())
+    dispatch(fetchServices())
   }, [dispatch])
 
   // Gestion des chambres
@@ -61,12 +75,19 @@ const AdminPage = () => {
     } else {
       await dispatch(createChambre(formData))
     }
-    setFormData({ numero: "", type: "SIMPLE", capacite: 1, prix: 0, statut: "DISPONIBLE" })
+    setFormData({ numero: "", type: "SIMPLE", capacite: 1, prix: 0, statut: "DISPONIBLE", hotel: "" })
     setShowForm(false)
   }
 
   const handleEdit = (chambre) => {
-    setFormData(chambre)
+    setFormData({
+      numero: chambre.numero,
+      type: chambre.type,
+      capacite: chambre.capacite,
+      prix: chambre.prix,
+      statut: chambre.statut,
+      hotel: chambre.hotel?._id || chambre.hotel || "",
+    })
     setEditingId(chambre._id)
     setShowForm(true)
   }
@@ -77,30 +98,102 @@ const AdminPage = () => {
     }
   }
 
-  // Gestion des services
-  const handleAddService = () => {
-    if (serviceForm.name) {
-      setServices([...services, { id: Date.now(), name: serviceForm.name, prix: serviceForm.prix, actif: true }])
-      setServiceForm({ name: "", prix: 0 })
-      setShowServiceForm(false)
+  // Gestion des hotels
+  const handleHotelInputChange = (e) => {
+    const { name, value } = e.target
+    setHotelForm((prev) => ({
+      ...prev,
+      [name]: name === "etoiles" ? Number(value) : value,
+    }))
+  }
+
+  const handleHotelSubmit = async (e) => {
+    e.preventDefault()
+    if (editingHotelId) {
+      await dispatch(updateHotel({ id: editingHotelId, data: hotelForm }))
+      setEditingHotelId(null)
+    } else {
+      await dispatch(createHotel(hotelForm))
+    }
+    setHotelForm({ nom: "", adresse: "", ville: "", telephone: "", email: "", description: "", etoiles: 3 })
+    setShowHotelForm(false)
+  }
+
+  const handleHotelEdit = (hotel) => {
+    setHotelForm({
+      nom: hotel.nom,
+      adresse: hotel.adresse,
+      ville: hotel.ville,
+      telephone: hotel.telephone,
+      email: hotel.email,
+      description: hotel.description || "",
+      etoiles: hotel.etoiles || 3,
+    })
+    setEditingHotelId(hotel._id)
+    setShowHotelForm(true)
+  }
+
+  const handleHotelDelete = async (id) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet hôtel ?")) {
+      await dispatch(deleteHotel(id))
     }
   }
 
-  const toggleService = (id) => {
-    setServices(services.map((s) => (s.id === id ? { ...s, actif: !s.actif } : s)))
+  // Gestion des services
+  const handleServiceInputChange = (e) => {
+    const { name, value } = e.target
+    setServiceForm((prev) => ({
+      ...prev,
+      [name]: name === "prix" ? Number(value) : value,
+    }))
   }
 
-  const deleteService = (id) => {
-    setServices(services.filter((s) => s.id !== id))
+  const handleServiceSubmit = async (e) => {
+    e.preventDefault()
+    if (editingServiceId) {
+      await dispatch(updateService({ id: editingServiceId, data: serviceForm }))
+      setEditingServiceId(null)
+    } else {
+      await dispatch(createService(serviceForm))
+    }
+    setServiceForm({ nom: "", prix: 0, hotel: "", description: "" })
+    setShowServiceForm(false)
+  }
+
+  const handleServiceEdit = (service) => {
+    setServiceForm({
+      nom: service.nom,
+      prix: service.prix,
+      hotel: service.hotel?._id || service.hotel || "",
+      description: service.description || "",
+    })
+    setEditingServiceId(service._id)
+    setShowServiceForm(true)
+  }
+
+  const handleToggleService = async (id) => {
+    await dispatch(toggleService(id))
+  }
+
+  const handleDeleteService = async (id) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce service ?")) {
+      await dispatch(deleteService(id))
+    }
   }
 
   // Gestion des réservations
-  const handleValidateReservation = (id) => {
-    alert(`Réservation ${id} validée avec succès!`)
+  const handleValidateReservation = async (id) => {
+    if (window.confirm("Voulez-vous valider cette réservation ?")) {
+      await dispatch(validateReservation(id))
+      dispatch(fetchAllReservations())
+    }
   }
 
-  const handleRejectReservation = (id) => {
-    alert(`Réservation ${id} rejetée.`)
+  const handleRejectReservation = async (id) => {
+    if (window.confirm("Voulez-vous rejeter/annuler cette réservation ?")) {
+      await dispatch(cancelReservation(id))
+      dispatch(fetchAllReservations())
+    }
   }
 
   const handleGenerateInvoice = (id) => {
@@ -109,20 +202,20 @@ const AdminPage = () => {
 
   // Stats calculations
   const stats = {
+    totalHotels: hotels.length,
     totalChambres: chambres.length,
     chambresDisponibles: chambres.filter((c) => c.statut === "DISPONIBLE").length,
-    chambreOccupees: chambres.filter((c) => c.statut === "INDISPONIBLE").length,
-    tauxOccupation: chambres.length > 0 ? Math.round((chambres.filter((c) => c.statut === "INDISPONIBLE").length / chambres.length) * 100) : 0,
-    reservationsEnCours: reservations.filter((r) => r.statut === "CONFIRMEE").length,
-    reservationsPayes: reservations.filter((r) => r.statut === "PAYEE").length,
+    chambreOccupees: chambres.filter((c) => c.statut === "OCCUPEE").length,
+    tauxOccupation: chambres.length > 0 ? Math.round((chambres.filter((c) => c.statut === "OCCUPEE").length / chambres.length) * 100) : 0,
+    reservationsEnCours: reservations.filter((r) => r.statut === "VALIDEE" || r.statut === "EN_ATTENTE").length,
+    reservationsEnAttente: reservations.filter((r) => r.statut === "EN_ATTENTE").length,
+    reservationsValidees: reservations.filter((r) => r.statut === "VALIDEE").length,
     reservationsAnnulees: reservations.filter((r) => r.statut === "ANNULEE").length,
-    totalClients: clients.length,
+    reservationsTerminees: reservations.filter((r) => r.statut === "TERMINEE").length,
     totalServices: services.filter((s) => s.actif).length,
-    revenuTotal: reservations.reduce((sum, r) => sum + (r.montantTotal || 0), 0),
-    revenuMoyen: reservations.length > 0 ? Math.round(reservations.reduce((sum, r) => sum + (r.montantTotal || 0), 0) / reservations.length) : 0,
   }
 
-  if (chambresLoading || reservationsLoading) return <Loading fullScreen />
+  if (chambresLoading || reservationsLoading || hotelsLoading || servicesLoading) return <Loading fullScreen />
 
   return (
     <div className="bg-white min-h-screen">
@@ -280,16 +373,12 @@ const AdminPage = () => {
                   <h3 className="font-bold text-gray-900 mb-4">Clients</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Total</span>
+                      <span className="text-gray-600">Total unique</span>
                       <span className="font-bold text-blue-600">{stats.totalClients}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Actifs</span>
-                      <span className="font-bold text-green-600">{clients.filter(c => c.statut === 'actif').length}</span>
-                    </div>
                     <div className="flex justify-between border-t pt-2">
-                      <span className="text-gray-700 font-semibold">Moyenne réservations</span>
-                      <span className="font-bold">{clients.length > 0 ? Math.round(clients.reduce((sum, c) => sum + c.reservations, 0) / clients.length) : 0}</span>
+                      <span className="text-gray-700 font-semibold">Réservations totales</span>
+                      <span className="font-bold">{reservations.length}</span>
                     </div>
                   </div>
                 </div>
@@ -545,7 +634,15 @@ const AdminPage = () => {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des Réservations</h2>
             <div className="space-y-3">
-              {reservations.map((reservation) => (
+              {reservations.map((reservation) => {
+                const calculateDays = (start, end) => {
+                  const d1 = new Date(start)
+                  const d2 = new Date(end)
+                  return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24))
+                }
+                const days = calculateDays(reservation.datedebut || reservation.dateArrivee, reservation.datefin || reservation.dateDepart)
+                const montantTotal = days * (reservation.chambre?.prix || 0)
+                return (
                 <div
                   key={reservation._id}
                   className="bg-white border border-gray-200 rounded-lg p-4"
@@ -557,33 +654,37 @@ const AdminPage = () => {
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Chambre</p>
-                      <p className="font-bold text-gray-900">#{reservation.chambreId?.numero}</p>
+                      <p className="font-bold text-gray-900">#{(reservation.chambre?.numero || reservation.chambreId?.numero) || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Dates</p>
                       <p className="font-bold text-gray-900">
-                        {new Date(reservation.dateArrivee).toLocaleDateString("fr-FR")} à{" "}
-                        {new Date(reservation.dateDepart).toLocaleDateString("fr-FR")}
+                        {new Date(reservation.datedebut || reservation.dateArrivee).toLocaleDateString("fr-FR")} à{" "}
+                        {new Date(reservation.datefin || reservation.dateDepart).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Montant</p>
-                      <p className="font-bold text-blue-600">{reservation.montantTotal}€</p>
+                      <p className="font-bold text-blue-600">{montantTotal}€</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Statut</p>
                       <span
                         className={`inline-block px-2 py-1 rounded text-xs font-bold ${
-                          reservation.statut === "CONFIRMEE"
+                          reservation.statut === "VALIDEE"
+                            ? "bg-green-100 text-green-700"
+                            : reservation.statut === "EN_ATTENTE"
                             ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
+                            : reservation.statut === "ANNULEE"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-blue-100 text-blue-700"
                         }`}
                       >
                         {reservation.statut}
                       </span>
                     </div>
                   </div>
-                  {reservation.statut === "CONFIRMEE" && (
+                  {reservation.statut === "EN_ATTENTE" && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleValidateReservation(reservation._id)}
@@ -599,17 +700,11 @@ const AdminPage = () => {
                         <X size={16} />
                         Rejeter
                       </button>
-                      <button
-                        onClick={() => handleGenerateInvoice(reservation._id)}
-                        className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium"
-                      >
-                        <Download size={16} />
-                        Facture
-                      </button>
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -699,47 +794,13 @@ const AdminPage = () => {
           </div>
         )}
 
-        {/* CLIENTS TAB */}
+        {/* CLIENTS TAB - TODO: Implement client management */}
         {activeTab === "clients" && (
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des Clients</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-4 font-bold text-gray-900">Nom</th>
-                    <th className="text-left py-3 px-4 font-bold text-gray-900">Email</th>
-                    <th className="text-left py-3 px-4 font-bold text-gray-900">Réservations</th>
-                    <th className="text-left py-3 px-4 font-bold text-gray-900">Statut</th>
-                    <th className="text-left py-3 px-4 font-bold text-gray-900">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clients.map((client) => (
-                    <tr key={client.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-900 font-semibold">{client.nom}</td>
-                      <td className="py-3 px-4 text-gray-600">{client.email}</td>
-                      <td className="py-3 px-4 text-gray-900 font-semibold">{client.reservations}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            client.statut === "actif"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {client.statut === "actif" ? "Actif" : "Inactif"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                          Détails
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-gray-600 text-lg mb-4">La gestion des clients sera bientôt disponible.</p>
+              <p className="text-gray-500">Les clients sont automatiquement enregistrés lors des réservations.</p>
             </div>
           </div>
         )}

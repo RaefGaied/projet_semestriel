@@ -1,20 +1,47 @@
 const express = require('express');
 const router = express.Router();
-const { register, login } = require('../controllers/userController');
+const { 
+  register, 
+  login, 
+  getProfile, 
+  updateProfile, 
+  changePassword, 
+  getAllUsers, 
+  deleteAccount 
+} = require('../controllers/userController');
 const { check, validationResult } = require('express-validator');
+const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
-// @route POST api/users/register
-router.post('/register', [
+// Middleware for validation
+const validateRegister = [
   check('nom', 'Le nom est obligatoire').not().isEmpty(),
   check('email', 'Email non valide').isEmail(),
   check('password', '6 caractères minimum').isLength({ min: 6 })
-], (req, res, next) => {
+];
+
+const validateLogin = [
+  check('email', 'Email non valide').isEmail(),
+  check('password', 'Mot de passe requis').exists()
+];
+
+const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
   next();
-}, register);
+};
 
-// @route POST api/users/login
-router.post('/login', login);
+// Public routes
+router.post('/register', validateRegister, handleValidationErrors, register);
+router.post('/login', validateLogin, handleValidationErrors, login);
+
+// Protected routes (Authenticated users)
+router.get('/profile', auth, getProfile);
+router.put('/profile', auth, updateProfile);
+router.put('/change-password', auth, changePassword);
+router.delete('/account', auth, deleteAccount);
+
+// Admin routes
+router.get('/admin/users', [auth, admin], getAllUsers);
 
 module.exports = router;

@@ -11,13 +11,30 @@ export const reservationService = {
     return response.data;
   },
 
+  getById: async (id) => {
+    const response = await apiClient.get(`/reservations/${id}`);
+    return response.data;
+  },
+
   cancel: async (id) => {
-    const response = await apiClient.put(`/reservations/annuler/${id}`);
+    const response = await apiClient.put(`/reservations/${id}/annuler`);
     return response.data;
   },
 
   finish: async (id) => {
-    const response = await apiClient.put(`/reservations/terminer/${id}`);
+    const response = await apiClient.put(`/reservations/${id}/terminer`);
+    return response.data;
+  },
+
+  // Admin endpoints
+  getAll: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/reservations?${params}`);
+    return response.data;
+  },
+
+  validate: async (id) => {
+    const response = await apiClient.put(`/reservations/${id}/valider`);
     return response.data;
   },
 };

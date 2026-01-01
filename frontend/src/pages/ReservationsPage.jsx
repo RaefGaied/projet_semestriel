@@ -62,7 +62,9 @@ const ReservationsPage = () => {
         ) : (
           <div className="space-y-4">
             {reservations.map((reservation) => {
-              const days = calculateDays(reservation.dateArrivee, reservation.dateDepart)
+              const days = calculateDays(reservation.datedebut || reservation.dateArrivee, reservation.datefin || reservation.dateDepart)
+              const prixParNuit = reservation.chambre?.prix || 0
+              const montantTotal = days * prixParNuit
               return (
                 <div
                   key={reservation._id}
@@ -72,21 +74,21 @@ const ReservationsPage = () => {
                     {/* Chambre */}
                     <div>
                       <p className="text-gray-600 text-sm mb-1">Chambre</p>
-                      <p className="text-2xl font-bold text-blue-600">#{reservation.chambreId?.numero || "N/A"}</p>
+                      <p className="text-2xl font-bold text-blue-600">#{(reservation.chambre?.numero || reservation.chambreId?.numero) || "N/A"}</p>
                     </div>
 
                     {/* Dates */}
                     <div>
                       <p className="text-gray-600 text-sm mb-1">Arrivée</p>
                       <p className="font-semibold text-gray-900">
-                        {new Date(reservation.dateArrivee).toLocaleDateString("fr-FR")}
+                        {new Date(reservation.datedebut || reservation.dateArrivee).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
 
                     <div>
                       <p className="text-gray-600 text-sm mb-1">Départ</p>
                       <p className="font-semibold text-gray-900">
-                        {new Date(reservation.dateDepart).toLocaleDateString("fr-FR")}
+                        {new Date(reservation.datefin || reservation.dateDepart).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
 
@@ -98,17 +100,19 @@ const ReservationsPage = () => {
 
                     <div>
                       <p className="text-gray-600 text-sm mb-1">Montant</p>
-                      <p className="text-xl font-bold text-gray-900">{reservation.montantTotal || 0}€</p>
+                      <p className="text-xl font-bold text-gray-900">{montantTotal}€</p>
                     </div>
 
                     {/* Statut */}
                     <div>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${
-                          reservation.statut === "CONFIRMEE"
+                          reservation.statut === "VALIDEE"
                             ? "bg-green-100 text-green-700"
                             : reservation.statut === "ANNULEE"
                               ? "bg-red-100 text-red-700"
+                              : reservation.statut === "TERMINEE"
+                              ? "bg-blue-100 text-blue-700"
                               : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
@@ -127,15 +131,17 @@ const ReservationsPage = () => {
                       <span>Détails</span>
                     </button>
 
-                    {reservation.statut === "CONFIRMEE" && (
+                    {(reservation.statut === "VALIDEE" || reservation.statut === "EN_ATTENTE") && (
                       <>
-                        <button
-                          onClick={() => handlePay(reservation)}
-                          className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium"
-                        >
-                          <CreditCard size={16} />
-                          <span>Payer</span>
-                        </button>
+                        {reservation.statut === "VALIDEE" && (
+                          <button
+                            onClick={() => handlePay(reservation)}
+                            className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium"
+                          >
+                            <CreditCard size={16} />
+                            <span>Payer</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleCancel(reservation._id)}
                           className="flex items-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg transition text-sm font-medium"
@@ -144,6 +150,12 @@ const ReservationsPage = () => {
                           <span>Annuler</span>
                         </button>
                       </>
+                    )}
+
+                    {reservation.statut === "EN_ATTENTE" && (
+                      <div className="text-sm text-yellow-600 bg-yellow-50 px-3 py-2 rounded-lg">
+                        ⏳ En attente de validation par l'admin
+                      </div>
                     )}
 
                     <a

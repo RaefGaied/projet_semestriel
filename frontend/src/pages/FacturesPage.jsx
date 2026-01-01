@@ -1,28 +1,220 @@
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { fetchMesReservations } from "../store/reservationSlice"
+import { fetchMesFactures } from "../store/factureSlice"
 import Loading from "../components/Loading"
 import { Download, Eye, Printer } from "lucide-react"
 
 const FacturesPage = () => {
   const dispatch = useDispatch()
-  const { reservations, loading } = useSelector((state) => state.reservations)
+  const { factures, loading } = useSelector((state) => state.factures)
   const { user } = useSelector((state) => state.auth)
   const [selectedFacture, setSelectedFacture] = useState(null)
 
   useEffect(() => {
     if (user) {
-      dispatch(fetchMesReservations())
+      dispatch(fetchMesFactures())
     }
   }, [dispatch, user])
 
-  const handleDownload = (reservation) => {
-    alert(`Téléchargement de la facture pour la réservation ${reservation._id}`)
-    // Logic pour télécharger la facture PDF
+  const handleDownload = (facture) => {
+    // Créer le contenu HTML de la facture
+    const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
+    const factureDate = new Date(facture.createdAt).toLocaleDateString("fr-FR")
+    const days = calculateDays(facture.reservation?.datedebut || facture.reservation?.dateArrivee, 
+                                facture.reservation?.datefin || facture.reservation?.dateDepart)
+    const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
+    const sousTotal = Math.round((facture.montantTotal / 1.2) * 100) / 100
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Facture ${factureNumber}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 { color: #2563eb; margin-bottom: 10px; }
+    .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .info-box { flex: 1; }
+    .info-box h3 { color: #2563eb; margin-bottom: 10px; font-size: 14px; }
+    .info-box p { margin: 5px 0; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f3f4f6; font-weight: bold; }
+    .totaux { text-align: right; margin-top: 20px; }
+    .totaux div { margin: 8px 0; }
+    .total-final { font-size: 18px; font-weight: bold; color: #2563eb; padding-top: 10px; border-top: 2px solid #2563eb; }
+    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏨 HôtelApp</h1>
+    <p>Facture N° ${factureNumber}</p>
+    <p>Date: ${factureDate}</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-box">
+      <h3>INFORMATIONS CLIENT</h3>
+      <p><strong>${user?.nom || 'Client'}</strong></p>
+      <p>${user?.email || ''}</p>
+    </div>
+    <div class="info-box">
+      <h3>DÉTAILS DU SÉJOUR</h3>
+      <p>Chambre: ${facture.reservation?.chambre?.numero || 'N/A'}</p>
+      <p>Type: ${facture.reservation?.chambre?.type || 'N/A'}</p>
+      <p>Du ${new Date(facture.reservation?.datedebut || facture.reservation?.dateArrivee).toLocaleDateString("fr-FR")}</p>
+      <p>Au ${new Date(facture.reservation?.datefin || facture.reservation?.dateDepart).toLocaleDateString("fr-FR")}</p>
+      <p>Durée: ${days} nuit(s)</p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Quantité</th>
+        <th>Prix unitaire</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Chambre ${facture.reservation?.chambre?.type || ''} - ${facture.reservation?.chambre?.numero || ''}</td>
+        <td>${days} nuit(s)</td>
+        <td>${Math.round((facture.montantTotal / 1.2 / days) * 100) / 100}€</td>
+        <td>${sousTotal}€</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totaux">
+    <div>Sous-total HT: ${sousTotal}€</div>
+    <div>TVA (20%): ${taxAmount}€</div>
+    <div class="total-final">TOTAL TTC: ${facture.montantTotal}€</div>
+  </div>
+
+  <div class="footer">
+    <p>Merci pour votre confiance - HôtelApp</p>
+    <p>support@hotelapp.fr | www.hotelapp.fr</p>
+  </div>
+</body>
+</html>
+    `
+
+    // Créer un Blob et télécharger
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Facture_${factureNumber}_${factureDate.replace(/\//g, '-')}.html`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
   }
 
-  const handlePrint = (reservation) => {
-    window.print()
+  const handlePrint = (facture) => {
+    const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
+    const factureDate = new Date(facture.createdAt).toLocaleDateString("fr-FR")
+    const days = calculateDays(facture.reservation?.datedebut || facture.reservation?.dateArrivee, 
+                                facture.reservation?.datefin || facture.reservation?.dateDepart)
+    const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
+    const sousTotal = Math.round((facture.montantTotal / 1.2) * 100) / 100
+
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Facture ${factureNumber}</title>
+  <style>
+    @media print {
+      @page { margin: 1cm; }
+    }
+    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h1 { color: #2563eb; margin-bottom: 10px; }
+    .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .info-box { flex: 1; }
+    .info-box h3 { color: #2563eb; margin-bottom: 10px; font-size: 14px; }
+    .info-box p { margin: 5px 0; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f3f4f6; font-weight: bold; }
+    .totaux { text-align: right; margin-top: 20px; }
+    .totaux div { margin: 8px 0; }
+    .total-final { font-size: 18px; font-weight: bold; color: #2563eb; padding-top: 10px; border-top: 2px solid #2563eb; }
+    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏨 HôtelApp</h1>
+    <p>Facture N° ${factureNumber}</p>
+    <p>Date: ${factureDate}</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-box">
+      <h3>INFORMATIONS CLIENT</h3>
+      <p><strong>${user?.nom || 'Client'}</strong></p>
+      <p>${user?.email || ''}</p>
+    </div>
+    <div class="info-box">
+      <h3>DÉTAILS DU SÉJOUR</h3>
+      <p>Chambre: ${facture.reservation?.chambre?.numero || 'N/A'}</p>
+      <p>Type: ${facture.reservation?.chambre?.type || 'N/A'}</p>
+      <p>Du ${new Date(facture.reservation?.datedebut || facture.reservation?.dateArrivee).toLocaleDateString("fr-FR")}</p>
+      <p>Au ${new Date(facture.reservation?.datefin || facture.reservation?.dateDepart).toLocaleDateString("fr-FR")}</p>
+      <p>Durée: ${days} nuit(s)</p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Quantité</th>
+        <th>Prix unitaire</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Chambre ${facture.reservation?.chambre?.type || ''} - ${facture.reservation?.chambre?.numero || ''}</td>
+        <td>${days} nuit(s)</td>
+        <td>${Math.round((facture.montantTotal / 1.2 / days) * 100) / 100}€</td>
+        <td>${sousTotal}€</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totaux">
+    <div>Sous-total HT: ${sousTotal}€</div>
+    <div>TVA (20%): ${taxAmount}€</div>
+    <div class="total-final">TOTAL TTC: ${facture.montantTotal}€</div>
+  </div>
+
+  <div class="footer">
+    <p>Merci pour votre confiance - HôtelApp</p>
+    <p>support@hotelapp.fr | www.hotelapp.fr</p>
+  </div>
+</body>
+</html>
+    `
+
+    // Ouvrir dans une nouvelle fenêtre et imprimer
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(printContent)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      printWindow.close()
+    }, 250)
   }
 
   const calculateDays = (arrival, departure) => {
@@ -32,11 +224,6 @@ const FacturesPage = () => {
   }
 
   if (loading) return <Loading fullScreen />
-
-  // Filtrer les réservations confirmées ou payées
-  const factures = reservations.filter(
-    (r) => r.statut === "CONFIRMEE" || r.statut === "PAYEE"
-  )
 
   return (
     <div className="bg-white min-h-screen">
@@ -57,7 +244,7 @@ const FacturesPage = () => {
         ) : (
           <div className="space-y-4">
             {factures.map((facture) => {
-              const days = calculateDays(facture.dateArrivee, facture.dateDepart)
+              const days = calculateDays(facture.reservation?.dateArrivee, facture.reservation?.dateDepart)
               const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
               const factureDate = new Date(facture.createdAt).toLocaleDateString("fr-FR")
               const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
@@ -107,18 +294,22 @@ const FacturesPage = () => {
                           <div>
                             <p className="text-gray-600">Arrivée</p>
                             <p className="font-semibold text-gray-900">
-                              {new Date(facture.dateArrivee).toLocaleDateString("fr-FR")}
+                              {new Date(facture.reservation?.dateArrivee).toLocaleDateString("fr-FR")}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-600">Départ</p>
                             <p className="font-semibold text-gray-900">
-                              {new Date(facture.dateDepart).toLocaleDateString("fr-FR")}
+                              {new Date(facture.reservation?.dateDepart).toLocaleDateString("fr-FR")}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-600">Nombre de nuits</p>
                             <p className="font-semibold text-gray-900">{days}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Chambre</p>
+                            <p className="font-semibold text-gray-900">#{facture.reservation?.chambre?.numero || "N/A"}</p>
                           </div>
                         </div>
                       </div>

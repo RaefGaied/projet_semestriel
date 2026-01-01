@@ -27,6 +27,43 @@ export const login = createAsyncThunk(
   }
 );
 
+export const getProfile = createAsyncThunk(
+  'auth/getProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await userService.getProfile();
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors du chargement du profil');
+    }
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await userService.updateProfile(data);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors de la mise à jour du profil');
+    }
+  }
+);
+
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await userService.changePassword(data);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors du changement de mot de passe');
+    }
+  }
+);
+
 const initialState = {
   user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
   token: localStorage.getItem('token') || null,
@@ -76,6 +113,47 @@ const authSlice = createSlice({
         state.token = action.payload.token;
       })
       .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Get Profile
+    builder
+      .addCase(getProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+      })
+      .addCase(getProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Update Profile
+    builder
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Change Password
+    builder
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

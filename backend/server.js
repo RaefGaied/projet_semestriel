@@ -20,9 +20,12 @@ app.use(express.json());
 app.get('/', (req, res) => res.send('API en cours d\'exécution...'));
 
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/hotels', require('./routes/hotelRoutes'));
 app.use('/api/chambres', require('./routes/chambreRoutes'));
+app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/reservations', require('./routes/reservationRoutes'));
 app.use('/api/factures', require('./routes/factureRoutes'));
+app.use('/api/paiements', require('./routes/paiementRoutes'));
 app.get('/api/admin/stats', [auth, admin], getDashboardStats);
 
 

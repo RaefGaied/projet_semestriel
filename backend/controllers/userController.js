@@ -2,29 +2,34 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-// Inscription
+// Register
 exports.register = async (req, res) => {
   const { nom, email, password, role } = req.body;
   
   try {
-    // Vérifier si l'utilisateur existe
+    // Check if user exists
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ msg: 'Utilisateur déjà existant' });
 
-    // Créer une nouvelle instance
-    user = new User({ nom, email, password, role });
+    // Validate role
+    const validRoles = ['client', 'admin'];
+    const userRole = validRoles.includes(role) ? role : 'client';
+
+    // Create new user
+    user = new User({ nom, email, password, role: userRole });
     await user.save();
 
-    // Créer le Token JWT
+    // Create JWT token
     const payload = { user: { id: user.id, role: user.role } };
 
     jwt.sign(
       payload,
       process.env.JWT_SECRET, 
-      { expiresIn: '1h' },
+      { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
         res.status(201).json({ 
+          message: "Inscription réussie",
           token,
           user: { 
             id: user._id, 
@@ -37,11 +42,11 @@ exports.register = async (req, res) => {
     );
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
+    res.status(500).json({ message: "Erreur inscription", error: err.message });
   }
 };
 
-// Connexion
+// Login
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   
@@ -57,10 +62,11 @@ exports.login = async (req, res) => {
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
-      { expiresIn: '1h' },
+      { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
         res.json({ 
+          message: "Connexion réussie",
           token,
           user: { 
             id: user._id, 
@@ -73,6 +79,98 @@ exports.login = async (req, res) => {
     );
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
+    res.status(500).json({ message: "Erreur connexion", error: err.message });
+  }
+};
+
+// Get profile
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ msg: 'Utilisateur non trouvé' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur récupération profil", error: err.message });
+  }
+};
+
+// Update profile
+exports.updateProfile = async (req, res) => {
+  const { nom, email } = req.body;
+
+  try {
+    // Check if email is already taken by another user
+    if (email) {
+      const emailTaken = await User.findOne({ email, _id: { $ne: req.user.id } });
+      if (emailTaken) {
+        return res.status(400).json({ msg: 'Email déjà utilisé' });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: { nom, email } },
+      { new: true }
+    ).select('-password');
+
+    res.json({
+      message: "Profil mis à jour",
+      user
+    });
+  } catch (err) {
+    res.status(400).json({ message: "Erreur mise à jour profil", error: err.message });
+  }
+};
+
+// Change password
+exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(req.user.id);
+
+    // Verify old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Ancien mot de passe incorrect' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ message: "Mot de passe changé avec succès" });
+  } catch (err) {
+    res.status(500).json({ message: "Erreur changement mot de passe", error: err.message });
+  }
+};
+
+// Get all users (Admin only)
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur récupération utilisateurs", error: err.message });
+  }
+};
+
+// Delete user account
+exports.deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ msg: 'Utilisateur non trouvé' });
+    }
+
+    res.json({ message: "Compte supprimé avec succès" });
+  } catch (err) {
+    res.status(500).json({ message: "Erreur suppression compte", error: err.message });
   }
 };

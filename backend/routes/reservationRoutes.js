@@ -1,24 +1,26 @@
 const express = require('express');
 const router = express.Router();
-// AJOUT : annulerReservation et terminerSejour dans l'import
 const { 
   createReservation, 
-  getMesReservations, 
-  annulerReservation, 
-  terminerSejour 
+  getMesReservations,
+  getAllReservations,
+  getReservationById,
+  validerReservation,
+  annulerReservation,
+  terminerSejour
 } = require('../controllers/reservationController');
-
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
-// Créer et Voir
+// Client routes
 router.post('/', auth, createReservation);
 router.get('/me', auth, getMesReservations);
+router.get('/:id', auth, getReservationById);
+router.put('/:id/annuler', auth, annulerReservation);
+router.put('/:id/terminer', auth, terminerSejour);
 
-// Annulation (Client & Admin)
-router.put('/annuler/:id', auth, annulerReservation);
-
-// Check-out (Admin uniquement)
-router.put('/terminer/:id', [auth, admin], terminerSejour);
+// Admin routes
+router.get('/', [auth, admin], getAllReservations);
+router.put('/:id/valider', [auth, admin], validerReservation);
 
 module.exports = router;

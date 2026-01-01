@@ -49,6 +49,42 @@ export const finishReservation = createAsyncThunk(
   }
 );
 
+export const fetchAllReservations = createAsyncThunk(
+  'reservations/fetchAll',
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const response = await reservationService.getAll(filters);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors du chargement');
+    }
+  }
+);
+
+export const fetchReservationById = createAsyncThunk(
+  'reservations/fetchById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await reservationService.getById(id);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors du chargement');
+    }
+  }
+);
+
+export const validateReservation = createAsyncThunk(
+  'reservations/validate',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await reservationService.validate(id);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors de la validation');
+    }
+  }
+);
+
 const initialState = {
   reservations: [],
   loading: false,
