@@ -27,10 +27,7 @@ const isTokenExpired = (token) => {
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    
-    // Vérifier si le token est expiré
     if (token && isTokenExpired(token)) {
-      // Token expiré, le supprimer
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       store.dispatch(logout());

@@ -1,0 +1,31 @@
+[dotenv@17.2.3] injecting env (3) from .env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+Γ£à MongoDB connect├⌐
+≡ƒùæ∩╕Å  Base de donn├⌐es nettoy├⌐e
+≡ƒæÑ G├⌐n├⌐ration des utilisateurs (100+)...
+Γ£à 100 clients cr├⌐├⌐s
+≡ƒÅ¿ G├⌐n├⌐ration des h├┤tels (20)...
+Γ£à 20 h├┤tels cr├⌐├⌐s
+≡ƒ¢Ä∩╕Å  G├⌐n├⌐ration des services (150+)...
+Γ£à 208 services cr├⌐├⌐s
+≡ƒ¢Å∩╕Å  G├⌐n├⌐ration des chambres (500+)...
+Γ£à 602 chambres cr├⌐├⌐es
+≡ƒôà G├⌐n├⌐ration des r├⌐servations (200+)...
+Γ£à 200 r├⌐servations cr├⌐├⌐es
+Γ£à 149 factures cr├⌐├⌐es
+Γ£à 130 paiements cr├⌐├⌐s
+
+≡ƒÄë ==========================================
+≡ƒÄë BASE DE DONN├ëES REMPLIE AVEC SUCC├êS !
+≡ƒÄë ==========================================
+
+≡ƒôè Statistiques compl├¿tes:
+   - 20 h├┤tels
+   - 602 chambres
+   - 208 services
+   - 100 clients
+   - 200 r├⌐servations
+   - 149 factures
+   - 130 paiements
+
+≡ƒöÉ Compte admin: admin@hotelgroup.com / admin123
+
