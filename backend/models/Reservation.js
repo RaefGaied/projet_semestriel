@@ -23,6 +23,10 @@ const reservationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service'
   }],
+  montantTotal: {
+    type: Number,
+    default: 0
+  },
   statut: { 
     type: String, 
     enum: ['EN_ATTENTE', 'VALIDEE', 'ANNULEE', 'TERMINEE'], 

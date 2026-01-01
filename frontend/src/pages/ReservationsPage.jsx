@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchMesReservations, cancelReservation } from "../store/reservationSlice"
+import { createPaiement } from "../store/paiementSlice"
 import Loading from "../components/Loading"
-import { Trash2, Eye, Download, CreditCard } from "lucide-react"
+import { Trash2, Eye, Download, CreditCard, Check } from "lucide-react"
+import { toast } from "react-toastify"
 
 const ReservationsPage = () => {
   const dispatch = useDispatch()
@@ -10,6 +12,8 @@ const ReservationsPage = () => {
   const { user } = useSelector((state) => state.auth)
   const [selectedReservation, setSelectedReservation] = useState(null)
   const [paymentModal, setPaymentModal] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState("CARTE_CREDIT")
+  const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -25,20 +29,78 @@ const ReservationsPage = () => {
   }
 
   const handlePay = (reservation) => {
-    setSelectedReservation(reservation)
+    // Calculer le montant total si le champ n'existe pas
+    const days = calculateDays(reservation.datedebut || reservation.dateArrivee, reservation.datefin || reservation.dateDepart)
+    const prixParNuit = reservation.chambre?.prix || 0
+    const montantCalcule = (days && prixParNuit) ? days * prixParNuit : (reservation.montantTotal || (reservation.facture?.montantTotal || 0))
+    
+    // Ajouter le montant calculé au selectedReservation
+    const reservationAvecMontant = {
+      ...reservation,
+      montantTotal: montantCalcule || reservation.montantTotal || reservation.facture?.montantTotal || 0
+    }
+    
+    setSelectedReservation(reservationAvecMontant)
     setPaymentModal(true)
   }
 
   const processPayment = async () => {
-    alert(`Paiement de ${selectedReservation.montantTotal}€ traité avec succès!`)
-    setPaymentModal(false)
-    setSelectedReservation(null)
+    if (!selectedReservation || processing) return
+    
+    setProcessing(true)
+    try {
+      // Récupérer le montant depuis plusieurs sources possibles
+      const montantAPayer = selectedReservation.montantTotal || 
+                           selectedReservation.facture?.montantTotal || 
+                           0
+      
+      if (montantAPayer <= 0) {
+        toast.error("Le montant du paiement est invalide")
+        setProcessing(false)
+        return
+      }
+      
+      const paiementData = {
+        reservationId: selectedReservation._id,
+        montant: montantAPayer,
+        methodePaiement: paymentMethod
+      }
+      
+      await dispatch(createPaiement(paiementData)).unwrap()
+      toast.success("Paiement effectué avec succès!")
+      
+      // Recharger les réservations pour mettre à jour le statut
+      await dispatch(fetchMesReservations())
+      
+      setPaymentModal(false)
+      setSelectedReservation(null)
+      setPaymentMethod("CARTE_CREDIT")
+    } catch (error) {
+      // Gérer les erreurs spécifiques
+      if (error.msg && error.msg.includes("paiement existe")) {
+        // Payment already exists - reload reservations to show the correct status
+        toast.warning("Ce paiement a déjà été enregistré")
+        await dispatch(fetchMesReservations())
+        setPaymentModal(false)
+        setSelectedReservation(null)
+      } else if (error.msg) {
+        toast.error(error.msg)
+      } else if (typeof error === 'object' && error.message) {
+        toast.error(error.message)
+      } else {
+        toast.error("Erreur lors du paiement: " + (error || "Erreur inconnue"))
+      }
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const calculateDays = (arrival, departure) => {
+    if (!arrival || !departure) return 0
     const start = new Date(arrival)
     const end = new Date(departure)
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+    return isNaN(days) || days < 0 ? 0 : days
   }
 
   if (loading) return <Loading fullScreen />
@@ -64,7 +126,7 @@ const ReservationsPage = () => {
             {reservations.map((reservation) => {
               const days = calculateDays(reservation.datedebut || reservation.dateArrivee, reservation.datefin || reservation.dateDepart)
               const prixParNuit = reservation.chambre?.prix || 0
-              const montantTotal = days * prixParNuit
+              const montantTotal = reservation.montantTotal || reservation.facture?.montantTotal || ((days && prixParNuit) ? days * prixParNuit : 0)
               return (
                 <div
                   key={reservation._id}
@@ -132,15 +194,27 @@ const ReservationsPage = () => {
                     </button>
 
                     {(reservation.statut === "VALIDEE" || reservation.statut === "EN_ATTENTE") && (
-                      <>
+                      <React.Fragment key={`actions-${reservation._id}`}>
                         {reservation.statut === "VALIDEE" && (
-                          <button
-                            onClick={() => handlePay(reservation)}
-                            className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium"
-                          >
-                            <CreditCard size={16} />
-                            <span>Payer</span>
-                          </button>
+                          <>
+                            {reservation.facture?.estPayee ? (
+                              <button
+                                disabled
+                                className="flex items-center space-x-1 bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium cursor-not-allowed opacity-75"
+                              >
+                                <Check size={16} />
+                                <span>Payé le {new Date(reservation.facture.datePaiement).toLocaleDateString("fr-FR")}</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handlePay(reservation)}
+                                className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition text-sm font-medium"
+                              >
+                                <CreditCard size={16} />
+                                <span>Payer</span>
+                              </button>
+                            )}
+                          </>
                         )}
                         <button
                           onClick={() => handleCancel(reservation._id)}
@@ -149,7 +223,7 @@ const ReservationsPage = () => {
                           <Trash2 size={16} />
                           <span>Annuler</span>
                         </button>
-                      </>
+                      </React.Fragment>
                     )}
 
                     {reservation.statut === "EN_ATTENTE" && (
@@ -184,11 +258,39 @@ const ReservationsPage = () => {
                         </div>
                         <div>
                           <p className="text-gray-600">Nombre de nuits</p>
-                          <p className="font-semibold text-gray-900">{days}</p>
+                          <p className="font-semibold text-gray-900">{days || 0}</p>
                         </div>
                         <div>
-                          <p className="text-gray-600">Montant total</p>
-                          <p className="font-bold text-blue-600 text-lg">{reservation.montantTotal}€</p>
+                          <p className="text-gray-600">Prix chambre</p>
+                          <p className="font-semibold text-gray-900">{montantTotal || 0}€</p>
+                        </div>
+                      </div>
+
+                      {/* Services inclus */}
+                      {reservation.services && reservation.services.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h5 className="font-bold text-gray-900 mb-2">Services inclus</h5>
+                          <div className="space-y-2">
+                            {reservation.services.map((service) => (
+                              <div key={service._id || service} className="flex justify-between items-center bg-white p-2 rounded">
+                                <div>
+                                  <p className="font-medium text-gray-900">{service.nom || 'Service'}</p>
+                                  {service.description && (
+                                    <p className="text-xs text-gray-500">{service.description}</p>
+                                  )}
+                                </div>
+                                <span className="font-semibold text-blue-600">{service.prix || 0}€</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Montant total final */}
+                      <div className="mt-4 pt-4 border-t-2 border-gray-300">
+                        <div className="flex justify-between items-center">
+                          <p className="text-lg font-bold text-gray-900">Montant total</p>
+                          <p className="text-2xl font-bold text-blue-600">{reservation.montantTotal || montantTotal || 0}€</p>
                         </div>
                       </div>
                     </div>
@@ -209,17 +311,17 @@ const ReservationsPage = () => {
             <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
               <div className="flex justify-between">
                 <span className="text-gray-600">Chambre</span>
-                <span className="font-semibold text-gray-900">#{selectedReservation.chambreId?.numero}</span>
+                <span className="font-semibold text-gray-900">#{selectedReservation.chambre?.numero || "N/A"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Durée</span>
                 <span className="font-semibold text-gray-900">
-                  {calculateDays(selectedReservation.dateArrivee, selectedReservation.dateDepart)} nuits
+                  {calculateDays(selectedReservation.datedebut, selectedReservation.datefin) || 0} nuits
                 </span>
               </div>
               <div className="flex justify-between text-lg">
                 <span className="font-bold text-gray-900">Montant à payer</span>
-                <span className="font-bold text-blue-600">{selectedReservation.montantTotal}€</span>
+                <span className="font-bold text-blue-600">{selectedReservation.montantTotal || 0}€</span>
               </div>
             </div>
 
@@ -228,16 +330,37 @@ const ReservationsPage = () => {
               <label className="block text-gray-700 font-semibold mb-3">Méthode de paiement</label>
               <div className="space-y-2">
                 <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="payment" defaultChecked className="mr-3" />
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="CARTE_CREDIT"
+                    checked={paymentMethod === "CARTE_CREDIT"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mr-3" 
+                  />
                   <span className="text-gray-900">Carte bancaire</span>
                 </label>
                 <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="payment" className="mr-3" />
-                  <span className="text-gray-900">PayPal</span>
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="VIREMENT"
+                    checked={paymentMethod === "VIREMENT"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mr-3" 
+                  />
+                  <span className="text-gray-900">Virement bancaire</span>
                 </label>
                 <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="payment" className="mr-3" />
-                  <span className="text-gray-900">Virement bancaire</span>
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="ESPECES"
+                    checked={paymentMethod === "ESPECES"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="mr-3" 
+                  />
+                  <span className="text-gray-900">Espèces</span>
                 </label>
               </div>
             </div>
@@ -252,9 +375,14 @@ const ReservationsPage = () => {
               </button>
               <button
                 onClick={processPayment}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
+                disabled={processing}
+                className={`flex-1 font-semibold py-2 rounded-lg transition ${
+                  processing 
+                    ? "bg-gray-400 cursor-not-allowed text-white" 
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
               >
-                Payer {selectedReservation.montantTotal}€
+                {processing ? "Traitement..." : `Payer ${selectedReservation.montantTotal || 0}€`}
               </button>
             </div>
           </div>

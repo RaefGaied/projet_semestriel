@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom"
 import { fetchChambres, createChambre, updateChambre, deleteChambre } from "../store/chambreSlice"
 import { fetchAllReservations, validateReservation, cancelReservation } from "../store/reservationSlice"
 import { fetchHotels, createHotel, updateHotel, deleteHotel } from "../store/hotelSlice"
 import { fetchServices, createService, updateService, toggleService, deleteService } from "../store/serviceSlice"
 import Loading from "../components/Loading"
-import { Plus, Edit2, Trash2, Check, X, Download, Users, Home, Utensils, FileText, Hotel } from "lucide-react"
+import { Plus, Edit2, Trash2, Check, X, Download, Users, Home, Utensils, FileText, Hotel, Package } from "lucide-react"
+import { toast } from "react-toastify"
 
 const AdminPage = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { chambres, loading: chambresLoading } = useSelector((state) => state.chambres)
   const { reservations, loading: reservationsLoading } = useSelector((state) => state.reservations)
   const { hotels, loading: hotelsLoading } = useSelector((state) => state.hotels)
@@ -39,16 +42,6 @@ const AdminPage = () => {
     email: "",
     description: "",
     etoiles: 3,
-  })
-
-  // Service form state
-  const [showServiceForm, setShowServiceForm] = useState(false)
-  const [editingServiceId, setEditingServiceId] = useState(null)
-  const [serviceForm, setServiceForm] = useState({
-    nom: "",
-    prix: 0,
-    hotel: "",
-    description: "",
   })
 
   useEffect(() => {
@@ -139,60 +132,28 @@ const AdminPage = () => {
     }
   }
 
-  // Gestion des services
-  const handleServiceInputChange = (e) => {
-    const { name, value } = e.target
-    setServiceForm((prev) => ({
-      ...prev,
-      [name]: name === "prix" ? Number(value) : value,
-    }))
-  }
-
-  const handleServiceSubmit = async (e) => {
-    e.preventDefault()
-    if (editingServiceId) {
-      await dispatch(updateService({ id: editingServiceId, data: serviceForm }))
-      setEditingServiceId(null)
-    } else {
-      await dispatch(createService(serviceForm))
-    }
-    setServiceForm({ nom: "", prix: 0, hotel: "", description: "" })
-    setShowServiceForm(false)
-  }
-
-  const handleServiceEdit = (service) => {
-    setServiceForm({
-      nom: service.nom,
-      prix: service.prix,
-      hotel: service.hotel?._id || service.hotel || "",
-      description: service.description || "",
-    })
-    setEditingServiceId(service._id)
-    setShowServiceForm(true)
-  }
-
-  const handleToggleService = async (id) => {
-    await dispatch(toggleService(id))
-  }
-
-  const handleDeleteService = async (id) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce service ?")) {
-      await dispatch(deleteService(id))
-    }
-  }
-
   // Gestion des réservations
   const handleValidateReservation = async (id) => {
     if (window.confirm("Voulez-vous valider cette réservation ?")) {
-      await dispatch(validateReservation(id))
-      dispatch(fetchAllReservations())
+      try {
+        await dispatch(validateReservation(id)).unwrap()
+        toast.success("Réservation validée avec succès")
+        dispatch(fetchAllReservations())
+      } catch (error) {
+        toast.error("Erreur lors de la validation: " + (error.message || error))
+      }
     }
   }
 
   const handleRejectReservation = async (id) => {
     if (window.confirm("Voulez-vous rejeter/annuler cette réservation ?")) {
-      await dispatch(cancelReservation(id))
-      dispatch(fetchAllReservations())
+      try {
+        await dispatch(cancelReservation(id)).unwrap()
+        toast.success("Réservation annulée avec succès")
+        dispatch(fetchAllReservations())
+      } catch (error) {
+        toast.error("Erreur lors de l'annulation: " + (error.message || error))
+      }
     }
   }
 
@@ -213,6 +174,9 @@ const AdminPage = () => {
     reservationsAnnulees: reservations.filter((r) => r.statut === "ANNULEE").length,
     reservationsTerminees: reservations.filter((r) => r.statut === "TERMINEE").length,
     totalServices: services.filter((s) => s.actif).length,
+    revenuTotal: reservations.reduce((sum, r) => sum + (r.montantTotal || 0), 0),
+    revenuMoyen: reservations.length > 0 ? Math.round(reservations.reduce((sum, r) => sum + (r.montantTotal || 0), 0) / reservations.length) : 0,
+    reservationsPayes: reservations.filter((r) => r.facture && r.facture.estPayee).length,
   }
 
   if (chambresLoading || reservationsLoading || hotelsLoading || servicesLoading) return <Loading fullScreen />
@@ -551,80 +515,33 @@ const AdminPage = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Gestion des Services</h2>
               <button
-                onClick={() => setShowServiceForm(!showServiceForm)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition flex items-center space-x-2 font-medium"
+                onClick={() => navigate('/services')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition flex items-center gap-2 font-semibold"
               >
-                <Plus size={20} />
-                <span>Ajouter un service</span>
+                <Package size={20} />
+                <span>Gérer les services</span>
               </button>
             </div>
 
-            {showServiceForm && (
-              <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
-                <h3 className="text-xl font-bold mb-4 text-gray-900">Ajouter un service</h3>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Nom du service"
-                    value={serviceForm.name}
-                    onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Prix (€)"
-                    value={serviceForm.prix}
-                    onChange={(e) => setServiceForm({ ...serviceForm, prix: Number(e.target.value) })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleAddService}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition font-medium"
-                    >
-                      Ajouter
-                    </button>
-                    <button
-                      onClick={() => setShowServiceForm(false)}
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-900 px-6 py-2 rounded-lg transition font-medium"
-                    >
-                      Annuler
-                    </button>
-                  </div>
+            {/* Quick View */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <p className="text-gray-600 text-center py-8">
+                Cliquez sur "Gérer les services" pour accéder à la page de gestion complète des services hôteliers.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-blue-600">{services.filter(s => s.actif).length}</p>
+                  <p className="text-gray-600 text-sm">Services actifs</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-gray-600">{services.filter(s => !s.actif).length}</p>
+                  <p className="text-gray-600 text-sm">Services inactifs</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-green-600">{services.length}</p>
+                  <p className="text-gray-600 text-sm">Total services</p>
                 </div>
               </div>
-            )}
-
-            <div className="space-y-3">
-              {services.map((service) => (
-                <div
-                  key={service.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center"
-                >
-                  <div>
-                    <h3 className="font-bold text-gray-900">{service.name}</h3>
-                    <p className="text-gray-600 text-sm">{service.prix}€</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleService(service.id)}
-                      className={`px-4 py-2 rounded-lg transition font-medium ${
-                        service.actif
-                          ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : "bg-red-100 text-red-700 hover:bg-red-200"
-                      }`}
-                    >
-                      {service.actif ? "✓ Actif" : "✗ Inactif"}
-                    </button>
-                    <button
-                      onClick={() => deleteService(service.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition font-medium"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}
@@ -758,30 +675,30 @@ const AdminPage = () => {
                     </div>
                     <div>
                       <p className="text-gray-600 text-xs font-semibold mb-1">Chambre</p>
-                      <p className="font-bold text-gray-900">#{reservation.chambreId?.numero || "-"}</p>
+                      <p className="font-bold text-gray-900">#{reservation.chambre?.numero || "-"}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-xs font-semibold mb-1">Dates</p>
                       <p className="font-bold text-gray-900 text-sm">
-                        {new Date(reservation.dateArrivee).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })} -{" "}
-                        {new Date(reservation.dateDepart).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })}
+                        {new Date(reservation.datedebut).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })} -{" "}
+                        {new Date(reservation.datefin).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-xs font-semibold mb-1">Montant</p>
-                      <p className="font-bold text-blue-600 text-lg">{reservation.montantTotal}€</p>
+                      <p className="font-bold text-blue-600 text-lg">{reservation.montantTotal || 0}€</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-                          reservation.statut === "PAYEE"
+                          reservation.facture?.estPayee
                             ? "bg-green-100 text-green-700"
-                            : reservation.statut === "CONFIRMEE"
+                            : reservation.statut === "VALIDEE"
                               ? "bg-yellow-100 text-yellow-700"
                               : "bg-red-100 text-red-700"
                         }`}
                       >
-                        {reservation.statut}
+                        {reservation.facture?.estPayee ? "PAYEE" : reservation.statut}
                       </span>
                       <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold transition">
                         Détails
@@ -794,13 +711,18 @@ const AdminPage = () => {
           </div>
         )}
 
-        {/* CLIENTS TAB - TODO: Implement client management */}
+        {/* CLIENTS TAB - Redirect to clients page */}
         {activeTab === "clients" && (
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des Clients</h2>
             <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-gray-600 text-lg mb-4">La gestion des clients sera bientôt disponible.</p>
-              <p className="text-gray-500">Les clients sont automatiquement enregistrés lors des réservations.</p>
+              <Users size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 text-lg mb-4">Accédez à la gestion complète des clients</p>
+              <button
+                onClick={() => navigate('/admin/clients')}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition"
+              >
+                Gérer les clients
+              </button>
             </div>
           </div>
         )}

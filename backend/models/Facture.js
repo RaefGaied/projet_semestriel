@@ -11,13 +11,25 @@ const factureSchema = new mongoose.Schema({
     type: Number, 
     required: true 
   },
+  dateFacture: { 
+    type: Date, 
+    default: Date.now 
+  },
   dateEmission: { 
     type: Date, 
     default: Date.now 
   },
   dateEcheance: {
     type: Date,
-    required: true
+    required: false
+  },
+  estPayee: {
+    type: Boolean,
+    default: false
+  },
+  datePaiement: {
+    type: Date,
+    required: false
   },
   statut: {
     type: String,

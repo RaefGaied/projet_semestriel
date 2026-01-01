@@ -129,12 +129,35 @@ const reservationSlice = createSlice({
         state.error = action.payload;
       });
 
+    // Fetch All (Admin)
+    builder
+      .addCase(fetchAllReservations.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchAllReservations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.reservations = action.payload;
+      })
+      .addCase(fetchAllReservations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
     // Cancel
     builder
       .addCase(cancelReservation.fulfilled, (state, action) => {
         const index = state.reservations.findIndex(r => r._id === action.payload._id);
         if (index !== -1) {
           state.reservations[index] = action.payload;
+        }
+      });
+
+    // Validate
+    builder
+      .addCase(validateReservation.fulfilled, (state, action) => {
+        const index = state.reservations.findIndex(r => r._id === action.payload.reservation._id);
+        if (index !== -1) {
+          state.reservations[index] = action.payload.reservation;
         }
       });
 

@@ -7,6 +7,27 @@ exports.createPaiement = async (req, res) => {
   const { reservationId, montant, methodePaiement } = req.body;
 
   try {
+    // Validate inputs
+    if (!reservationId || !montant || !methodePaiement) {
+      return res.status(400).json({ 
+        msg: 'Données manquantes: reservationId, montant, methodePaiement requis' 
+      });
+    }
+
+    if (montant <= 0) {
+      return res.status(400).json({ 
+        msg: 'Le montant doit être supérieur à 0' 
+      });
+    }
+
+    // Validate payment method
+    const validMethods = ['ESPECES', 'CARTE_CREDIT', 'VIREMENT', 'CHEQUE'];
+    if (!validMethods.includes(methodePaiement)) {
+      return res.status(400).json({ 
+        msg: `Méthode de paiement invalide. Valides: ${validMethods.join(', ')}` 
+      });
+    }
+
     // Get reservation
     const reservation = await Reservation.findById(reservationId);
     if (!reservation) {
@@ -45,10 +66,13 @@ exports.createPaiement = async (req, res) => {
     // Update invoice status
     if (montant === facture.montantTotal) {
       facture.statut = 'PAYEE';
+      facture.estPayee = true;
     } else if (montant > 0) {
       facture.statut = 'PARTIELLE';
+      facture.estPayee = true; // Mark as having a payment, even if partial
     }
     facture.paiement = nouveauPaiement._id;
+    facture.datePaiement = new Date();
     await facture.save();
 
     res.status(201).json({

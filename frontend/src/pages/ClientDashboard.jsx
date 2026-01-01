@@ -32,14 +32,22 @@ const ClientDashboard = () => {
       let pastCount = 0
 
       reservations.forEach((res) => {
-        if (res.statut === "CONFIRMEE") actives++
-        if (res.statut === "CONFIRMEE") pendants++
+        // Réservations actives = VALIDEE ou EN_ATTENTE
+        if (res.statut === "VALIDEE" || res.statut === "EN_ATTENTE") actives++
+        
+        // Paiements en attente = réservations avec facture non payée
+        if (res.facture && !res.facture.estPayee) pendants++
+        
+        // Montant total dépensé = somme de toutes les réservations
         totalSpent += res.montantTotal || 0
 
-        const arrivalDate = new Date(res.dateArrivee)
-        const departDate = new Date(res.dateDepart)
+        const arrivalDate = new Date(res.datedebut)
+        const departDate = new Date(res.datefin)
 
-        if (arrivalDate > now) upcomingCount++
+        // Séjours à venir = date de début dans le futur
+        if (arrivalDate > now && res.statut !== "ANNULEE") upcomingCount++
+        
+        // Séjours passés = date de fin dans le passé (stay is finished/completed)
         if (departDate < now) pastCount++
       })
 
@@ -49,6 +57,13 @@ const ClientDashboard = () => {
         totalDepense: totalSpent,
         sejours: { prochains: upcomingCount, passes: pastCount },
       })
+    } else {
+      setStats({
+        reservationsActives: 0,
+        paiementsPendants: 0,
+        totalDepense: 0,
+        sejours: { prochains: 0, passes: 0 },
+      })
     }
   }, [reservations])
 
@@ -56,11 +71,13 @@ const ClientDashboard = () => {
 
   // Filtrer les réservations
   const upcomingReservations = reservations
-    .filter((r) => new Date(r.dateArrivee) > new Date())
-    .sort((a, b) => new Date(a.dateArrivee) - new Date(b.dateArrivee))
+    .filter((r) => new Date(r.datedebut) > new Date() && r.statut !== "ANNULEE")
+    .sort((a, b) => new Date(a.datedebut) - new Date(b.datedebut))
     .slice(0, 3)
 
-  const pendingPayments = reservations.filter((r) => r.statut === "CONFIRMEE").slice(0, 3)
+  const pendingPayments = reservations
+    .filter((r) => r.facture && !r.facture.estPayee && r.statut !== "ANNULEE")
+    .slice(0, 3)
 
   return (
     <div className="bg-white min-h-screen">
@@ -141,8 +158,16 @@ const ClientDashboard = () => {
               <div className="space-y-4">
                 {upcomingReservations.map((reservation) => {
                   const nights = Math.ceil(
-                    (new Date(reservation.dateDepart) - new Date(reservation.dateArrivee)) / (1000 * 60 * 60 * 24)
+                    (new Date(reservation.datefin) - new Date(reservation.datedebut)) / (1000 * 60 * 60 * 24)
                   )
+                  
+                  const statutColors = {
+                    EN_ATTENTE: "bg-yellow-100 text-yellow-700",
+                    VALIDEE: "bg-green-100 text-green-700",
+                    TERMINEE: "bg-gray-100 text-gray-700",
+                    ANNULEE: "bg-red-100 text-red-700"
+                  }
+                  
                   return (
                     <div
                       key={reservation._id}
@@ -151,23 +176,23 @@ const ClientDashboard = () => {
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">
-                            Chambre #{reservation.chambreId?.numero || "N/A"}
+                            Chambre #{reservation.chambre?.numero || "N/A"}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            {new Date(reservation.dateArrivee).toLocaleDateString("fr-FR", {
+                            {new Date(reservation.datedebut).toLocaleDateString("fr-FR", {
                               year: "numeric",
                               month: "long",
                               day: "numeric",
                             })}{" "}
                             -{" "}
-                            {new Date(reservation.dateDepart).toLocaleDateString("fr-FR", {
+                            {new Date(reservation.datefin).toLocaleDateString("fr-FR", {
                               year: "numeric",
                               month: "long",
                               day: "numeric",
                             })}
                           </p>
                         </div>
-                        <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">
+                        <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${statutColors[reservation.statut] || "bg-gray-100 text-gray-700"}`}>
                           {reservation.statut}
                         </span>
                       </div>
@@ -220,19 +245,19 @@ const ClientDashboard = () => {
                         <AlertCircle size={20} className="text-orange-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Chambre #{payment.chambreId?.numero}</p>
-                        <p className="text-xs text-gray-600">À confirmer</p>
+                        <p className="font-semibold text-gray-900">Chambre #{payment.chambre?.numero || "N/A"}</p>
+                        <p className="text-xs text-gray-600">En attente de paiement</p>
                       </div>
                     </div>
 
                     <div className="border-t border-gray-200 pt-3 mb-3">
                       <div className="flex justify-between mb-2">
                         <span className="text-gray-600 text-sm">Montant dû</span>
-                        <span className="font-bold text-gray-900">{payment.montantTotal}€</span>
+                        <span className="font-bold text-gray-900">{payment.montantTotal || 0}€</span>
                       </div>
                       <p className="text-xs text-gray-500">
                         Avant le{" "}
-                        {new Date(payment.dateArrivee).toLocaleDateString("fr-FR", {
+                        {new Date(payment.datedebut).toLocaleDateString("fr-FR", {
                           month: "short",
                           day: "numeric",
                         })}

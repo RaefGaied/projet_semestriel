@@ -1,5 +1,6 @@
 const Reservation = require('../models/Reservation');
 const Chambre = require('../models/Chambre');
+const Service = require('../models/Service');
 const Facture = require('../models/Facture');
 const Paiement = require('../models/Paiement');
 
@@ -48,9 +49,36 @@ exports.createReservation = async (req, res) => {
       { path: 'services' }
     ]);
 
+    // Calculer le montant total (selon diagramme UML)
+    const days = Math.ceil((new Date(dateFin) - new Date(dateDebut)) / (1000 * 60 * 60 * 24));
+    const prixChambre = chambreTrouvee.prix * days;
+    
+    // Calculer le coût des services
+    let prixServices = 0;
+    if (services && services.length > 0) {
+      const servicesDetails = await Service.find({ _id: { $in: services } });
+      prixServices = servicesDetails.reduce((total, service) => total + service.prix, 0);
+    }
+    
+    const montantTotal = prixChambre + prixServices;
+
+    // Mettre à jour la réservation avec le montant total
+    nouvelleReservation.montantTotal = montantTotal;
+    await nouvelleReservation.save();
+
+    // Générer automatiquement la facture (relation 1-1 selon UML)
+    const facture = new Facture({
+      reservation: nouvelleReservation._id,
+      montantTotal: montantTotal,
+      dateFacture: new Date(),
+      estPayee: false
+    });
+    await facture.save();
+
     res.status(201).json({
       message: "Réservation créée avec succès",
-      reservation: reservationPopulee
+      reservation: reservationPopulee,
+      facture: facture
     });
   } catch (err) {
     console.error('Erreur création réservation:', err);
@@ -69,7 +97,18 @@ exports.getMesReservations = async (req, res) => {
       ])
       .sort({ createdAt: -1 });
 
-    res.json(reservations);
+    // Ajouter les factures pour chaque réservation
+    const reservationsAvecFactures = await Promise.all(
+      reservations.map(async (res) => {
+        const facture = await Facture.findOne({ reservation: res._id });
+        return {
+          ...res.toObject(),
+          facture: facture
+        };
+      })
+    );
+
+    res.json(reservationsAvecFactures);
   } catch (err) {
     res.status(500).json({ message: "Erreur récupération réservations", error: err.message });
   }
@@ -94,7 +133,18 @@ exports.getAllReservations = async (req, res) => {
       ])
       .sort({ createdAt: -1 });
 
-    res.json(reservations);
+    // Ajouter les factures pour chaque réservation
+    const reservationsAvecFactures = await Promise.all(
+      reservations.map(async (res) => {
+        const facture = await Facture.findOne({ reservation: res._id });
+        return {
+          ...res.toObject(),
+          facture: facture
+        };
+      })
+    );
+
+    res.json(reservationsAvecFactures);
   } catch (err) {
     res.status(500).json({ message: "Erreur récupération réservations", error: err.message });
   }

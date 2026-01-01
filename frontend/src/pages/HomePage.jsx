@@ -7,7 +7,7 @@ export default function HomePage() {
       
       {/* Hero Section - FIXED SIZES */}
       {/* Reduced padding and font sizes for better visibility */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+      <section className="bg-linear-to-r from-blue-600 to-blue-700 text-white pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center">
             {/* Changed from text-8xl to text-5xl/6xl */}
@@ -102,7 +102,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-50 to-indigo-50 py-20 px-4 sm:px-6 lg:px-8">
+      <section className="bg-linear-to-r from-blue-50 to-indigo-50 py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
             Prêt à réserver ?

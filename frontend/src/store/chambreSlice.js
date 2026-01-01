@@ -85,6 +85,18 @@ export const updateChambreStatus = createAsyncThunk(
   }
 );
 
+export const createChambreForHotel = createAsyncThunk(
+  'chambres/createForHotel',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await chambreService.create(data);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Erreur lors de la création');
+    }
+  }
+);
+
 const initialState = {
   chambres: [],
   currentChambre: null,

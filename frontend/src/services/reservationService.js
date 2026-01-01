@@ -29,7 +29,7 @@ export const reservationService = {
   // Admin endpoints
   getAll: async (filters = {}) => {
     const params = new URLSearchParams(filters);
-    const response = await apiClient.get(`/reservations?${params}`);
+    const response = await apiClient.get(`/reservations/all?${params}`);
     return response.data;
   },
 

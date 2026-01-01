@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 const { getDashboardStats } = require('./controllers/adminController');
 const auth = require('./middleware/auth');
@@ -16,6 +17,8 @@ const app = express();
 app.use(cors()); 
 app.use(express.json()); 
 
+// Serve static files (uploads)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => res.send('API en cours d\'exécution...'));
 

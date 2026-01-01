@@ -1,9 +1,10 @@
 import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { MapPin, Star, Phone, Mail, Plus } from "lucide-react"
+import { MapPin, Star, Phone, Mail, Plus, Edit, Trash2 } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
-import { fetchHotels } from "../store/hotelSlice"
+import { fetchHotels, deleteHotel } from "../store/hotelSlice"
 import Loading from "../components/Loading"
+import { toast } from "react-toastify"
 
 const HotelsPage = () => {
   const dispatch = useDispatch()
@@ -14,6 +15,18 @@ const HotelsPage = () => {
   useEffect(() => {
     dispatch(fetchHotels())
   }, [dispatch])
+
+  const handleDelete = async (hotelId, hotelName) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'hôtel "${hotelName}" ?`)) {
+      try {
+        await dispatch(deleteHotel(hotelId)).unwrap()
+        toast.success('Hôtel supprimé avec succès')
+        dispatch(fetchHotels())
+      } catch (error) {
+        toast.error('Erreur lors de la suppression')
+      }
+    }
+  }
 
   if (loading) return <Loading fullScreen />
 
@@ -82,8 +95,16 @@ const HotelsPage = () => {
               className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition duration-300"
             >
               {/* Image */}
-              <div className="bg-linear-to-br from-blue-100 to-blue-50 h-40 flex items-center justify-center text-6xl">
-                {hotel.image}
+              <div className="bg-linear-to-br from-blue-100 to-blue-50 h-40 flex items-center justify-center text-6xl overflow-hidden">
+                {hotel.image ? (
+                  <img 
+                    src={`http://localhost:5000${hotel.image}`} 
+                    alt={hotel.nom}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>🏨</span>
+                )}
               </div>
 
               {/* Contenu */}
@@ -136,6 +157,24 @@ const HotelsPage = () => {
                   >
                     Chambres
                   </Link>
+                  {user?.role === 'admin' && (
+                    <>
+                      <button
+                        onClick={() => navigate(`/hotels/edit/${hotel._id}`)}
+                        className="inline-flex items-center justify-center px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 font-semibold rounded-lg transition"
+                        title="Modifier l'hôtel"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(hotel._id, hotel.nom)}
+                        className="inline-flex items-center justify-center px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg transition"
+                        title="Supprimer l'hôtel"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

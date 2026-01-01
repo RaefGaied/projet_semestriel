@@ -6,7 +6,9 @@ const {
   getProfile, 
   updateProfile, 
   changePassword, 
-  getAllUsers, 
+  getAllUsers,
+  getAllClients,
+  toggleClientActivation,
   deleteAccount 
 } = require('../controllers/userController');
 const { check, validationResult } = require('express-validator');
@@ -43,5 +45,7 @@ router.delete('/account', auth, deleteAccount);
 
 // Admin routes
 router.get('/admin/users', [auth, admin], getAllUsers);
+router.get('/admin/clients', [auth, admin], getAllClients);
+router.put('/admin/clients/:clientId/toggle', [auth, admin], toggleClientActivation);
 
 module.exports = router;

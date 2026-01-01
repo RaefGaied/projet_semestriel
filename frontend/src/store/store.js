@@ -6,6 +6,7 @@ import serviceReducer from './serviceSlice';
 import reservationReducer from './reservationSlice';
 import factureReducer from './factureSlice';
 import paiementReducer from './paiementSlice';
+import clientReducer from './clientSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     reservations: reservationReducer,
     factures: factureReducer,
     paiements: paiementReducer,
+    clients: clientReducer,
   },
 });
 

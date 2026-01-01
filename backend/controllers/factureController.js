@@ -89,21 +89,30 @@ exports.getFactureByReservation = async (req, res) => {
 // Get my invoices (Client)
 exports.getMesFactures = async (req, res) => {
   try {
-    const factures = await Facture.find()
-      .populate({
-        path: 'reservation',
-        match: { client: req.user.id },
-        populate: [
-          { path: 'client', select: 'nom email' },
-          { path: 'chambre', populate: { path: 'hotel' } }
-        ]
-      })
-      .populate('paiement');
+    // Find all reservations for the client first
+    const mesReservations = await Reservation.find({ client: req.user.id })
+      .populate([
+        { path: 'client', select: 'nom email' },
+        { path: 'chambre', populate: { path: 'hotel' } },
+        { path: 'services' }
+      ]);
 
-    // Filter out factures where reservation is null (client mismatch)
-    const mesFact = factures.filter(f => f.reservation !== null);
+    // Get all factures for these reservations
+    const reservationIds = mesReservations.map(r => r._id);
+    const factures = await Facture.find({ reservation: { $in: reservationIds } })
+      .populate('paiement')
+      .sort({ dateEmission: -1 });
 
-    res.json(mesFact);
+    // Merge factures with their reservations
+    const facturesAvecReservations = factures.map(facture => {
+      const reservation = mesReservations.find(r => r._id.toString() === facture.reservation.toString());
+      return {
+        ...facture.toObject(),
+        reservation: reservation
+      };
+    });
+
+    res.json(facturesAvecReservations);
   } catch (err) {
     res.status(500).json({ message: "Erreur récupération factures", error: err.message });
   }
@@ -122,7 +131,8 @@ exports.getAllFactures = async (req, res) => {
         path: 'reservation',
         populate: [
           { path: 'client', select: 'nom email' },
-          { path: 'chambre', populate: { path: 'hotel' } }
+          { path: 'chambre', populate: { path: 'hotel' } },
+          { path: 'services' }
         ]
       })
       .populate('paiement')

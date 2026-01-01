@@ -160,6 +160,43 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Get all clients (Admin only)
+exports.getAllClients = async (req, res) => {
+  try {
+    const clients = await User.find({ role: 'client' }).select('-password');
+    res.json(clients);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur récupération clients", error: err.message });
+  }
+};
+
+// Toggle client activation (Admin only)
+exports.toggleClientActivation = async (req, res) => {
+  const { clientId } = req.params;
+
+  try {
+    const client = await User.findById(clientId);
+    
+    if (!client) {
+      return res.status(404).json({ msg: 'Client non trouvé' });
+    }
+
+    if (client.role !== 'client') {
+      return res.status(400).json({ msg: 'Cet utilisateur n\'est pas un client' });
+    }
+
+    client.actif = !client.actif;
+    await client.save();
+
+    res.json({
+      message: `Client ${client.actif ? 'activé' : 'désactivé'} avec succès`,
+      client: client.toObject({ getters: true, virtuals: true })
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Erreur activation/désactivation client", error: err.message });
+  }
+};
+
 // Delete user account
 exports.deleteAccount = async (req, res) => {
   try {

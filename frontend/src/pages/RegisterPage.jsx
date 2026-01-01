@@ -46,7 +46,7 @@ export const RegisterPage = () => {
   if (loading) return <Loading fullScreen />
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-background to-muted flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md border border-border/50">
         <h1 className="text-3xl font-bold text-center mb-2 text-primary">Créer un compte</h1>
         <p className="text-center text-muted-foreground text-sm mb-6">Rejoignez HôtelApp en quelques secondes</p>

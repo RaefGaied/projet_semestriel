@@ -65,6 +65,7 @@ exports.createHotel = async (req, res) => {
       email,
       description,
       etoiles,
+      image: req.file ? `/uploads/${req.file.filename}` : null,
       admin: req.user.id
     });
 
@@ -129,9 +130,16 @@ exports.getHotelById = async (req, res) => {
 // Update hotel
 exports.updateHotel = async (req, res) => {
   try {
+    const updateData = { $set: req.body };
+    
+    // Add image if file was uploaded
+    if (req.file) {
+      updateData.$set.image = `/uploads/${req.file.filename}`;
+    }
+
     const hotel = await Hotel.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      updateData,
       { new: true }
     ).populate('services');
 

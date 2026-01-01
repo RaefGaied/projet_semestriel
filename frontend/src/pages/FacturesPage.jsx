@@ -19,9 +19,8 @@ const FacturesPage = () => {
   const handleDownload = (facture) => {
     // Créer le contenu HTML de la facture
     const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
-    const factureDate = new Date(facture.createdAt).toLocaleDateString("fr-FR")
-    const days = calculateDays(facture.reservation?.datedebut || facture.reservation?.dateArrivee, 
-                                facture.reservation?.datefin || facture.reservation?.dateDepart)
+    const factureDate = new Date(facture.dateEmission || facture.dateFacture || facture.createdAt).toLocaleDateString("fr-FR")
+    const days = calculateDays(facture.reservation?.datedebut, facture.reservation?.datefin)
     const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
     const sousTotal = Math.round((facture.montantTotal / 1.2) * 100) / 100
 
@@ -65,9 +64,9 @@ const FacturesPage = () => {
       <h3>DÉTAILS DU SÉJOUR</h3>
       <p>Chambre: ${facture.reservation?.chambre?.numero || 'N/A'}</p>
       <p>Type: ${facture.reservation?.chambre?.type || 'N/A'}</p>
-      <p>Du ${new Date(facture.reservation?.datedebut || facture.reservation?.dateArrivee).toLocaleDateString("fr-FR")}</p>
-      <p>Au ${new Date(facture.reservation?.datefin || facture.reservation?.dateDepart).toLocaleDateString("fr-FR")}</p>
-      <p>Durée: ${days} nuit(s)</p>
+      <p>Du ${facture.reservation?.datedebut ? new Date(facture.reservation.datedebut).toLocaleDateString("fr-FR") : 'N/A'}</p>
+      <p>Au ${facture.reservation?.datefin ? new Date(facture.reservation.datefin).toLocaleDateString("fr-FR") : 'N/A'}</p>
+      <p>Durée: ${days || 0} nuit(s)</p>
     </div>
   </div>
 
@@ -83,8 +82,8 @@ const FacturesPage = () => {
     <tbody>
       <tr>
         <td>Chambre ${facture.reservation?.chambre?.type || ''} - ${facture.reservation?.chambre?.numero || ''}</td>
-        <td>${days} nuit(s)</td>
-        <td>${Math.round((facture.montantTotal / 1.2 / days) * 100) / 100}€</td>
+        <td>${days || 0} nuit(s)</td>
+        <td>${days > 0 ? Math.round((facture.montantTotal / 1.2 / days) * 100) / 100 : 0}€</td>
         <td>${sousTotal}€</td>
       </tr>
     </tbody>
@@ -118,9 +117,8 @@ const FacturesPage = () => {
 
   const handlePrint = (facture) => {
     const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
-    const factureDate = new Date(facture.createdAt).toLocaleDateString("fr-FR")
-    const days = calculateDays(facture.reservation?.datedebut || facture.reservation?.dateArrivee, 
-                                facture.reservation?.datefin || facture.reservation?.dateDepart)
+    const factureDate = new Date(facture.dateEmission || facture.dateFacture || facture.createdAt).toLocaleDateString("fr-FR")
+    const days = calculateDays(facture.reservation?.datedebut, facture.reservation?.datefin)
     const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
     const sousTotal = Math.round((facture.montantTotal / 1.2) * 100) / 100
 
@@ -167,9 +165,9 @@ const FacturesPage = () => {
       <h3>DÉTAILS DU SÉJOUR</h3>
       <p>Chambre: ${facture.reservation?.chambre?.numero || 'N/A'}</p>
       <p>Type: ${facture.reservation?.chambre?.type || 'N/A'}</p>
-      <p>Du ${new Date(facture.reservation?.datedebut || facture.reservation?.dateArrivee).toLocaleDateString("fr-FR")}</p>
-      <p>Au ${new Date(facture.reservation?.datefin || facture.reservation?.dateDepart).toLocaleDateString("fr-FR")}</p>
-      <p>Durée: ${days} nuit(s)</p>
+      <p>Du ${facture.reservation?.datedebut ? new Date(facture.reservation.datedebut).toLocaleDateString("fr-FR") : 'N/A'}</p>
+      <p>Au ${facture.reservation?.datefin ? new Date(facture.reservation.datefin).toLocaleDateString("fr-FR") : 'N/A'}</p>
+      <p>Durée: ${days || 0} nuit(s)</p>
     </div>
   </div>
 
@@ -185,8 +183,8 @@ const FacturesPage = () => {
     <tbody>
       <tr>
         <td>Chambre ${facture.reservation?.chambre?.type || ''} - ${facture.reservation?.chambre?.numero || ''}</td>
-        <td>${days} nuit(s)</td>
-        <td>${Math.round((facture.montantTotal / 1.2 / days) * 100) / 100}€</td>
+        <td>${days || 0} nuit(s)</td>
+        <td>${days > 0 ? Math.round((facture.montantTotal / 1.2 / days) * 100) / 100 : 0}€</td>
         <td>${sousTotal}€</td>
       </tr>
     </tbody>
@@ -218,9 +216,11 @@ const FacturesPage = () => {
   }
 
   const calculateDays = (arrival, departure) => {
+    if (!arrival || !departure) return 0
     const start = new Date(arrival)
     const end = new Date(departure)
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+    return isNaN(days) || days < 0 ? 0 : days
   }
 
   if (loading) return <Loading fullScreen />
@@ -244,10 +244,20 @@ const FacturesPage = () => {
         ) : (
           <div className="space-y-4">
             {factures.map((facture) => {
-              const days = calculateDays(facture.reservation?.dateArrivee, facture.reservation?.dateDepart)
+              // Logging pour debug
+              console.log("Facture:", facture);
+              
+              const days = calculateDays(facture.reservation?.datedebut, facture.reservation?.datefin)
               const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
-              const factureDate = new Date(facture.createdAt).toLocaleDateString("fr-FR")
+              const factureDate = new Date(facture.dateEmission || facture.dateFacture || facture.createdAt).toLocaleDateString("fr-FR")
               const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
+              
+              // Gestion des cas où reservation est null
+              const hasValidReservation = facture.reservation && facture.reservation.datedebut && facture.reservation.datefin
+              const startDate = hasValidReservation ? new Date(facture.reservation.datedebut).toLocaleDateString("fr-FR") : "N/A"
+              const endDate = hasValidReservation ? new Date(facture.reservation.datefin).toLocaleDateString("fr-FR") : "N/A"
+              const chambreNum = facture.reservation?.chambre?.numero || "N/A"
+              const montant = facture.montantTotal || "0"
 
               return (
                 <div
@@ -262,24 +272,16 @@ const FacturesPage = () => {
                         <p className="text-2xl font-bold">{factureNumber}</p>
                       </div>
                       <div>
-                        <p className="text-blue-100 text-sm mb-1">Date</p>
-                        <p className="text-lg font-semibold">{factureDate}</p>
+                        <p className="text-blue-100 text-sm mb-1">Dates du séjour</p>
+                        <p className="text-lg font-semibold">{startDate} - {endDate}</p>
                       </div>
                       <div>
                         <p className="text-blue-100 text-sm mb-1">Chambre</p>
-                        <p className="text-lg font-semibold">#{facture.chambreId?.numero || "N/A"}</p>
+                        <p className="text-lg font-semibold">#{chambreNum}</p>
                       </div>
                       <div>
-                        <p className="text-blue-100 text-sm mb-1">Statut</p>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${
-                            facture.statut === "PAYEE"
-                              ? "bg-green-200 text-green-900"
-                              : "bg-yellow-200 text-yellow-900"
-                          }`}
-                        >
-                          {facture.statut === "PAYEE" ? "✓ Payée" : "En attente"}
-                        </span>
+                        <p className="text-blue-100 text-sm mb-1">Montant total</p>
+                        <p className="text-xl font-bold">{montant}€</p>
                       </div>
                     </div>
                   </div>
@@ -294,18 +296,18 @@ const FacturesPage = () => {
                           <div>
                             <p className="text-gray-600">Arrivée</p>
                             <p className="font-semibold text-gray-900">
-                              {new Date(facture.reservation?.dateArrivee).toLocaleDateString("fr-FR")}
+                              {startDate}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-600">Départ</p>
                             <p className="font-semibold text-gray-900">
-                              {new Date(facture.reservation?.dateDepart).toLocaleDateString("fr-FR")}
+                              {endDate}
                             </p>
                           </div>
                           <div>
                             <p className="text-gray-600">Nombre de nuits</p>
-                            <p className="font-semibold text-gray-900">{days}</p>
+                            <p className="font-semibold text-gray-900">{days || 0}</p>
                           </div>
                           <div>
                             <p className="text-gray-600">Chambre</p>
@@ -320,15 +322,15 @@ const FacturesPage = () => {
                         <div className="space-y-2 text-sm">
                           <div>
                             <p className="text-gray-600">Nom</p>
-                            <p className="font-semibold text-gray-900">{user?.nom}</p>
+                            <p className="font-semibold text-gray-900">{facture.reservation?.client?.nom || user?.nom || 'N/A'}</p>
                           </div>
                           <div>
                             <p className="text-gray-600">Email</p>
-                            <p className="font-semibold text-gray-900">{user?.email}</p>
+                            <p className="font-semibold text-gray-900">{facture.reservation?.client?.email || user?.email || 'N/A'}</p>
                           </div>
                           <div>
                             <p className="text-gray-600">ID Client</p>
-                            <p className="font-semibold text-gray-900">{user?._id?.slice(-6)}</p>
+                            <p className="font-semibold text-gray-900">{facture.reservation?.client?._id?.slice(-6) || user?._id?.slice(-6) || 'N/A'}</p>
                           </div>
                         </div>
                       </div>
@@ -398,18 +400,18 @@ const FacturesPage = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="bg-white p-3 rounded-lg">
                           <p className="text-gray-600">Type de chambre</p>
-                          <p className="font-semibold text-gray-900">{facture.chambreId?.type || "N/A"}</p>
+                          <p className="font-semibold text-gray-900">{facture.reservation?.chambre?.type || "N/A"}</p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">
                           <p className="text-gray-600">Capacité</p>
                           <p className="font-semibold text-gray-900">
-                            {facture.chambreId?.capacite || 0} pers.
+                            {facture.reservation?.chambre?.capacite || 0} pers.
                           </p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">
                           <p className="text-gray-600">Prix/nuit</p>
                           <p className="font-semibold text-gray-900">
-                            {Math.round((facture.montantTotal / days) * 100) / 100}€
+                            {days > 0 ? Math.round((facture.montantTotal / days) * 100) / 100 : 0}€
                           </p>
                         </div>
                         <div className="bg-white p-3 rounded-lg">

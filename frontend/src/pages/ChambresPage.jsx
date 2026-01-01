@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { fetchChambres } from "../store/chambreSlice"
+import { fetchServicesByHotel } from "../store/serviceSlice"
 import { createReservation } from "../store/reservationSlice"
 import { toast } from "react-toastify"
 import Loading from "../components/Loading"
@@ -11,8 +12,11 @@ const ChambresPage = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { chambres, loading } = useSelector((state) => state.chambres)
+  const { services } = useSelector((state) => state.services)
   const { user } = useSelector((state) => state.auth)
   const [filtered, setFiltered] = useState([])
+  const [selectedServices, setSelectedServices] = useState([])
+  const [showingServicesFor, setShowingServicesFor] = useState(null)
   const [filters, setFilters] = useState({
     type: "",
     maxPrice: 1000,
@@ -91,11 +95,14 @@ const ChambresPage = () => {
         dateArrivee: filters.dateArrivee,
         dateDepart: filters.dateDepart,
         nombrePersonnes: chambre.capacite,
+        services: selectedServices // Ajouter les services sélectionnés
       }
 
       await dispatch(createReservation(reservationData)).unwrap()
       
       toast.success(`Réservation créée avec succès pour la chambre ${chambre.numero}`)
+      setSelectedServices([]) // Réinitialiser les services
+      setShowingServicesFor(null)
       
       // Rediriger vers la page des réservations
       setTimeout(() => {
@@ -106,6 +113,36 @@ const ChambresPage = () => {
     } finally {
       setReserving(false)
     }
+  }
+
+  // Charger les services de l'hôtel quand on affiche les services pour une chambre
+  const handleShowServices = async (chambre) => {
+    if (showingServicesFor === chambre._id) {
+      setShowingServicesFor(null)
+    } else {
+      setShowingServicesFor(chambre._id)
+      if (chambre.hotel?._id) {
+        await dispatch(fetchServicesByHotel(chambre.hotel._id))
+      }
+    }
+  }
+
+  // Toggle service selection
+  const toggleService = (serviceId) => {
+    setSelectedServices(prev => 
+      prev.includes(serviceId) 
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    )
+  }
+
+  // Calculer le montant total avec services
+  const calculateTotal = (chambre) => {
+    const prixChambre = chambre.prix * nights
+    const prixServices = services
+      .filter(s => selectedServices.includes(s._id))
+      .reduce((total, s) => total + s.prix, 0)
+    return prixChambre + prixServices
   }
 
   if (loading) return <Loading fullScreen />
@@ -267,7 +304,7 @@ const ChambresPage = () => {
                     {/* Hôtel info */}
                     {chambre.hotel && (
                       <div className="flex items-start gap-2 mt-2 text-sm text-gray-600">
-                        <MapPin size={14} className="mt-0.5 flex-shrink-0" />
+                        <MapPin size={14} className="mt-0.5 shrink-0" />
                         <div>
                           <p className="font-medium text-gray-900">{chambre.hotel.nom}</p>
                           {chambre.hotel.ville && (
@@ -308,6 +345,68 @@ const ChambresPage = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Services disponibles */}
+                  {chambre.hotel && (
+                    <div className="mb-4">
+                      <button
+                        onClick={() => handleShowServices(chambre)}
+                        className="w-full text-left px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-sm font-medium text-purple-700"
+                      >
+                        {showingServicesFor === chambre._id ? "▼" : "▶"} Services disponibles
+                      </button>
+                      
+                      {showingServicesFor === chambre._id && services.length > 0 && (
+                        <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border border-purple-200 rounded-lg p-2">
+                          {services.filter(s => s.actif).map((service) => (
+                            <label
+                              key={service._id}
+                              className="flex items-center justify-between p-2 hover:bg-purple-50 rounded cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedServices.includes(service._id)}
+                                  onChange={() => toggleService(service._id)}
+                                  className="rounded text-purple-600 focus:ring-purple-500"
+                                />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{service.nom}</p>
+                                  {service.description && (
+                                    <p className="text-xs text-gray-500">{service.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="text-sm font-semibold text-purple-600">+{service.prix}€</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {showingServicesFor === chambre._id && selectedServices.length > 0 && (
+                        <div className="mt-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                          <p className="text-xs text-gray-600 mb-1">Services sélectionnés:</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-900">
+                              {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''}
+                            </span>
+                            <span className="text-sm font-bold text-purple-600">
+                              +{services.filter(s => selectedServices.includes(s._id)).reduce((sum, s) => sum + s.prix, 0)}€
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {showingServicesFor === chambre._id && nights > 0 && selectedServices.length > 0 && (
+                        <div className="mt-2 p-3 bg-blue-100 rounded-lg border-2 border-blue-300">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-gray-900">TOTAL FINAL</span>
+                            <span className="text-xl font-bold text-blue-700">{calculateTotal(chambre)}€</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <button
                     onClick={() => handleReserver(chambre)}

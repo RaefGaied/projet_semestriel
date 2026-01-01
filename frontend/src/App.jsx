@@ -21,6 +21,8 @@ import FacturesPage from './pages/FacturesPage';
 import ClientDashboard from './pages/ClientDashboard';
 import UserProfile from './pages/UserProfile';
 import AdminPage from './pages/AdminPage';
+import ServicesPage from './pages/ServicesPage';
+import ClientsPage from './pages/ClientsPage';
 
 import './index.css';
 
@@ -96,7 +98,31 @@ function App() {
                 }
               />
               <Route
+                path="/services"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <ServicesPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/clients"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <ClientsPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
                 path="/hotels/add"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <AddHotelPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/hotels/edit/:id"
                 element={
                   <PrivateRoute requiredRole="admin">
                     <AddHotelPage />

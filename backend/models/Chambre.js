@@ -9,7 +9,7 @@ const chambreSchema = new mongoose.Schema({
   numero: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['SIMPLE', 'DOUBLE', 'SUITE'],
+    enum: ['SIMPLE', 'DOUBLE', 'SUITE', 'DELUXE'],
     required: true 
   },
   capacite: { type: Number, required: true },
