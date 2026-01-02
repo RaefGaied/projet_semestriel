@@ -23,6 +23,7 @@ import UserProfile from './pages/UserProfile';
 import AdminPage from './pages/AdminPage';
 import ServicesPage from './pages/ServicesPage';
 import ClientsPage from './pages/ClientsPage';
+import PowerBIDashboard from './components/Dashboard/PowerBIDashboard';
 
 import './index.css';
 
@@ -53,6 +54,9 @@ function App() {
               <Route path="/chambres" element={<ChambresPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              
+              {/* Dashboard Business Intelligence - Public */}
+              <Route path="/bi-dashboard" element={<PowerBIDashboard />} />
 
               {/* Routes protégées - Client */}
               <Route

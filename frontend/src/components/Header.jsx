@@ -34,6 +34,9 @@ const Header = () => {
           <Link to="/chambres" className="text-gray-600 hover:text-blue-600 font-medium transition">
             Chambres
           </Link>
+          <Link to="/bi-dashboard" className="text-gray-600 hover:text-blue-600 font-medium transition flex items-center gap-1">
+            <span>📊</span> Dashboard BI
+          </Link>
 
           <div className="h-6 w-px bg-gray-200 mx-2"></div>
 
@@ -85,6 +88,9 @@ const Header = () => {
           </Link>
           <Link to="/chambres" className="block text-gray-700 hover:text-blue-600 transition font-medium py-2">
             Chambres
+          </Link>
+          <Link to="/bi-dashboard" className="block text-gray-700 hover:text-blue-600 transition font-medium py-2">
+            📊 Dashboard BI
           </Link>
 
           {user ? (
