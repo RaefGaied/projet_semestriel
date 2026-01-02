@@ -26,7 +26,7 @@ def clean_database():
         print("✅ Connecté à MongoDB")
         
         # Sélectionner la base de données
-        db = client['hotel_db']
+        db = client['gestion-hoteliere']
         
         # Collections à nettoyer
         collections = [

@@ -4,7 +4,7 @@ from pymongo import MongoClient
 
 print("🧹 Nettoyage de MongoDB...")
 client = MongoClient('mongodb://localhost:27017')
-client['hotel_db'].drop_database()
+client['gestion-hoteliere'].drop_database()
 client.close()
 print("✅ Base MongoDB nettoyée")
 

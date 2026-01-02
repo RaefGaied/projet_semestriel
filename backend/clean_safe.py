@@ -2,7 +2,7 @@ from pymongo import MongoClient
 import sys
 
 client = MongoClient('mongodb://localhost:27017')
-db = client['hotel_db']
+db = client['gestion-hoteliere']
 
 # Afficher avant
 print("📊 AVANT nettoyage:")
