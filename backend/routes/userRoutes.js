@@ -29,11 +29,19 @@ const validateLogin = [
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  if (!errors.isEmpty()) {
+    console.log('❌ Erreurs de validation:', errors.array());
+    console.log('📦 Body reçu:', req.body);
+    return res.status(400).json({ errors: errors.array() });
+  }
   next();
 };
 
 // Public routes
+router.post('/test-register', (req, res) => {
+  console.log('🧪 TEST REGISTER - Body reçu:', req.body);
+  res.json({ success: true, received: req.body });
+});
 router.post('/register', validateRegister, handleValidationErrors, register);
 router.post('/login', validateLogin, handleValidationErrors, login);
 
