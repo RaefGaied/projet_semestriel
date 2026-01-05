@@ -54,9 +54,6 @@ function App() {
               <Route path="/chambres" element={<ChambresPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              
-              {/* Dashboard Business Intelligence - Public */}
-              <Route path="/bi-dashboard" element={<PowerBIDashboard />} />
 
               {/* Routes protégées - Client */}
               <Route
@@ -130,6 +127,14 @@ function App() {
                 element={
                   <PrivateRoute requiredRole="admin">
                     <AddHotelPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/bi-dashboard"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <PowerBIDashboard />
                   </PrivateRoute>
                 }
               />
