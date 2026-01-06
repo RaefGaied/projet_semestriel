@@ -1,10 +1,4 @@
--- ============================================================================
--- DATA WAREHOUSE - MODÈLE EN ÉTOILE
--- Projet: Gestion Hôtelière - Business Intelligence
--- SGBD: PostgreSQL
--- ============================================================================
 
--- Supprimer les tables existantes (dans l'ordre inverse des dépendances)
 DROP TABLE IF EXISTS fait_reservations
 CASCADE;
 DROP TABLE IF EXISTS dim_temps
@@ -18,13 +12,7 @@ CASCADE;
 DROP TABLE IF EXISTS dim_statut
 CASCADE;
 
--- ============================================================================
--- TABLES DE DIMENSIONS
--- ============================================================================
 
--- ----------------------------------------------------------------------------
--- DIM_TEMPS : Dimension temporelle
--- ----------------------------------------------------------------------------
 CREATE TABLE dim_temps
 (
     temps_id SERIAL PRIMARY KEY,
@@ -50,9 +38,7 @@ COMMENT ON TABLE dim_temps IS 'Dimension temporelle pour analyse chronologique';
 COMMENT ON COLUMN dim_temps.temps_id IS 'Clé primaire (surrogate key)';
 COMMENT ON COLUMN dim_temps.date_complete IS 'Date complète';
 
--- ----------------------------------------------------------------------------
--- DIM_HOTELS : Dimension hôtels
--- ----------------------------------------------------------------------------
+
 CREATE TABLE dim_hotels
 (
     hotel_id SERIAL PRIMARY KEY,
@@ -74,9 +60,7 @@ COMMENT ON TABLE dim_hotels IS 'Dimension des hôtels';
 COMMENT ON COLUMN dim_hotels.hotel_id IS 'Clé primaire (surrogate key)';
 COMMENT ON COLUMN dim_hotels.hotel_code IS 'Code métier de l''hôtel (ObjectId MongoDB)';
 
--- ----------------------------------------------------------------------------
--- DIM_CHAMBRES : Dimension chambres
--- ----------------------------------------------------------------------------
+
 CREATE TABLE dim_chambres
 (
     chambre_id SERIAL PRIMARY KEY,
@@ -99,9 +83,7 @@ COMMENT ON TABLE dim_chambres IS 'Dimension des chambres';
 COMMENT ON COLUMN dim_chambres.chambre_id IS 'Clé primaire (surrogate key)';
 COMMENT ON COLUMN dim_chambres.type_chambre IS 'Type: SIMPLE, DOUBLE, DELUXE, SUITE';
 
--- ----------------------------------------------------------------------------
--- DIM_CLIENTS : Dimension clients
--- ----------------------------------------------------------------------------
+
 CREATE TABLE dim_clients
 (
     client_id SERIAL PRIMARY KEY,
@@ -120,9 +102,7 @@ COMMENT ON TABLE dim_clients IS 'Dimension des clients';
 COMMENT ON COLUMN dim_clients.client_id IS 'Clé primaire (surrogate key)';
 COMMENT ON COLUMN dim_clients.client_code IS 'Code métier du client (ObjectId MongoDB)';
 
--- ----------------------------------------------------------------------------
--- DIM_STATUT : Dimension statut réservation
--- ----------------------------------------------------------------------------
+
 CREATE TABLE dim_statut
 (
     statut_id SERIAL PRIMARY KEY,
@@ -136,7 +116,7 @@ CREATE INDEX idx_statut_code ON dim_statut(code_statut);
 COMMENT ON TABLE dim_statut IS 'Dimension des statuts de réservation';
 COMMENT ON COLUMN dim_statut.statut_id IS 'Clé primaire (surrogate key)';
 
--- Insertion des statuts prédéfinis
+
 INSERT INTO dim_statut
     (code_statut, libelle_statut, description)
 VALUES
@@ -146,13 +126,7 @@ VALUES
     ('EN_ATTENTE', 'En attente', 'Réservation en attente de confirmation'),
     ('CONFIRMEE', 'Confirmée', 'Réservation confirmée');
 
--- ============================================================================
--- TABLE DE FAITS
--- ============================================================================
 
--- ----------------------------------------------------------------------------
--- FAIT_RESERVATIONS : Table de faits centrale
--- ----------------------------------------------------------------------------
 CREATE TABLE fait_reservations
 (
     reservation_id SERIAL PRIMARY KEY,
@@ -198,9 +172,7 @@ COMMENT ON COLUMN fait_reservations.reservation_id IS 'Clé primaire (surrogate 
 COMMENT ON COLUMN fait_reservations.montant_total IS 'Montant total de la réservation (métrique principale)';
 COMMENT ON COLUMN fait_reservations.duree_sejour IS 'Nombre de jours de séjour (métrique)';
 
--- ============================================================================
--- VUES ANALYTIQUES
--- ============================================================================
+
 
 -- Vue pour faciliter les analyses
 CREATE OR REPLACE VIEW v_analyse_reservations AS
@@ -260,9 +232,7 @@ FROM fait_reservations f
 
 COMMENT ON VIEW v_analyse_reservations IS 'Vue dénormalisée pour faciliter les analyses Power BI';
 
--- ============================================================================
--- STATISTIQUES ET VÉRIFICATIONS
--- ============================================================================
+
 
 -- Vue de statistiques du Data Warehouse
 CREATE OR REPLACE VIEW v_statistiques_dw AS
@@ -285,9 +255,7 @@ UNION ALL
     SELECT 'fait_reservations', COUNT(*)
     FROM fait_reservations;
 
--- ============================================================================
--- FIN DU SCRIPT
--- ============================================================================
+
 
 -- Afficher les statistiques
 SELECT *
