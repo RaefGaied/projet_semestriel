@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './PowerBIDashboard.css';
 
 const PowerBIDashboard = () => {
-  // ✅ URL Power BI Embed - Dashboard publié le 2 janvier 2026
+  // URL Power BI Embed - Dashboard publié le 2 janvier 2026
   const POWER_BI_EMBED_URL = 'https://app.powerbi.com/view?r=eyJrIjoiZjA1NTA0MGEtYTliOS00MmFlLWJkY2EtMGU5ZjYzYTYxMGI0IiwidCI6ImI3YmQ0NzE1LTQyMTctNDhjNy05MTllLTJlYTk3ZjU5MmZhNyJ9';
   
   const [isLoading, setIsLoading] = useState(true);
@@ -15,13 +15,13 @@ const PowerBIDashboard = () => {
     <div className="powerbi-dashboard-container">
       {/* Header */}
       <div className="dashboard-header">
-        <h1>📊 Dashboard Business Intelligence</h1>
+        <h1> Dashboard Business Intelligence</h1>
         <p className="dashboard-subtitle">
           Analyse de Performance - Gestion Hôtelière 2025
         </p>
       </div>
 
-      {/* Instructions si pas encore publié */}
+      {}
       {POWER_BI_EMBED_URL.includes('VOTRE_CODE_ICI') && (
         <div className="setup-instructions">
           <h3>⚠️ Configuration requise</h3>

@@ -22,7 +22,6 @@ const chambreSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Compound unique index - numéro unique par hôtel (pas globalement)
 chambreSchema.index({ hotel: 1, numero: 1 }, { unique: true });
 
 module.exports = mongoose.model('Chambre', chambreSchema);

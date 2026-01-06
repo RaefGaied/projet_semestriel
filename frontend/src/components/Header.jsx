@@ -43,7 +43,7 @@ const Header = () => {
                 <>
                   <Link to="/admin" className="text-gray-700 hover:text-blue-600 font-medium">Admin</Link>
                   <Link to="/bi-dashboard" className="text-gray-700 hover:text-blue-600 font-medium flex items-center gap-1">
-                    <span>📊</span> Dashboard BI
+                     Dashboard BI
                   </Link>
                 </>
               )}
