@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Power, PowerOff, Package, ArrowLeft } from "lucide
 import { fetchServices, createService, updateService, deleteService, toggleService } from "../store/serviceSlice"
 import { fetchHotels } from "../store/hotelSlice"
 import Loading from "../components/Loading"
+import Pagination from "../components/Pagination"
 import { toast } from "react-toastify"
 
 const ServicesPage = () => {
@@ -23,6 +24,8 @@ const ServicesPage = () => {
     prix: 0
   })
   const [selectedHotel, setSelectedHotel] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 12
 
   useEffect(() => {
     dispatch(fetchHotels())
@@ -64,7 +67,7 @@ const ServicesPage = () => {
         await dispatch(createService(formData)).unwrap()
         toast.success("Service créé avec succès")
       }
-      
+
       setShowModal(false)
       setEditingService(null)
       setFormData({ hotel: "", nom: "", description: "", prix: 0 })
@@ -111,6 +114,12 @@ const ServicesPage = () => {
     ? services.filter(s => (s.hotel?._id || s.hotel) === selectedHotel)
     : services
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredServices.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentServices = filteredServices.slice(startIndex, endIndex)
+
   if (loading) return <Loading fullScreen />
 
   return (
@@ -133,7 +142,10 @@ const ServicesPage = () => {
                 <Package size={32} className="text-blue-600" />
                 Services Hôteliers
               </h1>
-              <p className="text-gray-600 mt-2">Gérez les services et équipements proposés par vos hôtels</p>
+              <p className="text-gray-600 mt-2">
+                Gérez les services et équipements proposés par vos hôtels
+                {filteredServices.length > 0 && totalPages > 1 && ` - Page ${currentPage} sur ${totalPages}`}
+              </p>
             </div>
             {user?.role === "admin" && (
               <button
@@ -168,22 +180,20 @@ const ServicesPage = () => {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service) => (
+          {currentServices.map((service) => (
             <div
               key={service._id}
-              className={`bg-white rounded-lg shadow-md border-2 overflow-hidden transition ${
-                service.actif ? 'border-green-200' : 'border-gray-200 opacity-60'
-              }`}
+              className={`bg-white rounded-lg shadow-md border-2 overflow-hidden transition ${service.actif ? 'border-green-200' : 'border-gray-200 opacity-60'
+                }`}
             >
               <div className="p-6">
                 {/* Status Badge */}
                 <div className="flex items-center justify-between mb-4">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      service.actif
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${service.actif
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-700'
+                      }`}
                   >
                     {service.actif ? 'Actif' : 'Inactif'}
                   </span>
@@ -209,11 +219,10 @@ const ServicesPage = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleToggle(service._id, service.actif)}
-                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold transition ${
-                        service.actif
-                          ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
-                          : 'bg-green-100 hover:bg-green-200 text-green-700'
-                      }`}
+                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold transition ${service.actif
+                        ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
+                        : 'bg-green-100 hover:bg-green-200 text-green-700'
+                        }`}
                       title={service.actif ? "Désactiver" : "Activer"}
                     >
                       {service.actif ? <PowerOff size={16} /> : <Power size={16} />}
@@ -239,6 +248,19 @@ const ServicesPage = () => {
             </div>
           ))}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-8">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredServices.length}
+            />
+          </div>
+        )}
 
         {filteredServices.length === 0 && (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">

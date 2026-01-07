@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchMesFactures } from "../store/factureSlice"
 import Loading from "../components/Loading"
+import Pagination from "../components/Pagination"
 import { Download, Eye, Printer } from "lucide-react"
 
 const FacturesPage = () => {
@@ -9,6 +10,8 @@ const FacturesPage = () => {
   const { factures, loading } = useSelector((state) => state.factures)
   const { user } = useSelector((state) => state.auth)
   const [selectedFacture, setSelectedFacture] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     if (user) {
@@ -223,6 +226,12 @@ const FacturesPage = () => {
     return isNaN(days) || days < 0 ? 0 : days
   }
 
+  // Pagination calculations
+  const totalPages = Math.ceil(factures.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentFactures = factures.slice(startIndex, endIndex)
+
   if (loading) return <Loading fullScreen />
 
   return (
@@ -231,7 +240,10 @@ const FacturesPage = () => {
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-2 text-gray-900">Mes Factures</h1>
-          <p className="text-gray-600">Consultation et téléchargement de vos factures</p>
+          <p className="text-gray-600">
+            Consultation et téléchargement de vos factures
+            {factures.length > 0 && totalPages > 1 && ` - Page ${currentPage} sur ${totalPages}`}
+          </p>
         </div>
 
         {factures.length === 0 ? (
@@ -243,15 +255,15 @@ const FacturesPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {factures.map((facture) => {
+            {currentFactures.map((facture) => {
               // Logging pour debug
               console.log("Facture:", facture);
-              
+
               const days = calculateDays(facture.reservation?.datedebut, facture.reservation?.datefin)
               const factureNumber = `FAC-${facture._id?.slice(-6).toUpperCase()}`
               const factureDate = new Date(facture.dateEmission || facture.dateFacture || facture.createdAt).toLocaleDateString("fr-FR")
               const taxAmount = Math.round(facture.montantTotal * 0.2 * 100) / 100
-              
+
               // Gestion des cas où reservation est null
               const hasValidReservation = facture.reservation && facture.reservation.datedebut && facture.reservation.datefin
               const startDate = hasValidReservation ? new Date(facture.reservation.datedebut).toLocaleDateString("fr-FR") : "N/A"
@@ -424,6 +436,19 @@ const FacturesPage = () => {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-8">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={factures.length}
+            />
           </div>
         )}
       </div>

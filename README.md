@@ -11,7 +11,7 @@
 
 ---
 
-## 📋 Table des matières
+# Table des matières
 
 - [Description](#-description)
 - [Architecture](#-architecture)
@@ -29,7 +29,7 @@
 
 ---
 
-## 📖 Description
+##  Description
 
 **HôtelApp** est une application web full-stack de gestion hôtelière développée avec la stack MERN (MongoDB, Express, React, Node.js), enrichie d'une couche décisionnelle complète basée sur PostgreSQL et Power BI.
 
@@ -37,7 +37,7 @@ Le projet comprend :
 - **Couche opérationnelle (OLTP)** : Gestion quotidienne des réservations, clients, chambres et services
 - **Couche décisionnelle (OLAP)** : ETL, Data Warehouse, et Dashboard Power BI pour l'analyse et la prise de décision
 
-### 🎯 Objectifs du projet
+## Objectifs du projet
 
 Ce projet a été développé dans le cadre du module **Data Analytics & Business Intelligence** (5ème année Ingénierie Informatique) et vise à :
 - Mettre en œuvre un processus BI complet
@@ -48,7 +48,7 @@ Ce projet a été développé dans le cadre du module **Data Analytics & Busines
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ### Architecture Globale
 
@@ -94,9 +94,9 @@ MongoDB (Source) → ETL Python → PostgreSQL DW → Power BI → React Fronten
 
 ---
 
-## ✨ Fonctionnalités
+##  Fonctionnalités
 
-### 🎫 Côté Client
+### Côté Client
 - ✅ Inscription et connexion sécurisées (JWT)
 - ✅ Consultation du catalogue d'hôtels et chambres
 - ✅ Recherche et filtres avancés
@@ -105,16 +105,16 @@ MongoDB (Source) → ETL Python → PostgreSQL DW → Power BI → React Fronten
 - ✅ Historique des réservations et factures
 - ✅ Ajout de services supplémentaires
 
-### 👨‍💼 Côté Admin
+###  Côté Admin
 - ✅ Tableau de bord administrateur
 - ✅ Gestion des hôtels (CRUD)
 - ✅ Gestion des chambres et types
 - ✅ Gestion des clients et utilisateurs
 - ✅ Gestion des services
 - ✅ Validation des réservations
-- ✅ **📊 Dashboard Business Intelligence** (accès exclusif)
+- ✅ **Dashboard Business Intelligence** (accès exclusif)
 
-### 📊 Couche Business Intelligence
+###  Couche Business Intelligence
 - ✅ **ETL complet** : Extraction MongoDB → Transformation Python → Chargement PostgreSQL
 - ✅ **Data Warehouse** : Modèle en étoile (5 dimensions + 1 table de faits)
 - ✅ **Dashboard Power BI** : 3 pages interactives avec storytelling
@@ -123,7 +123,7 @@ MongoDB (Source) → ETL Python → PostgreSQL DW → Power BI → React Fronten
 
 ---
 
-## 🛠️ Technologies
+##  Technologies
 
 ### Frontend
 - **React** 18.3 - Interface utilisateur
@@ -152,7 +152,7 @@ MongoDB (Source) → ETL Python → PostgreSQL DW → Power BI → React Fronten
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Prérequis
 
@@ -193,7 +193,7 @@ pip install pandas pymongo psycopg2 matplotlib openpyxl
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### 1. Configuration Backend
 
@@ -238,7 +238,7 @@ python load_data_warehouse.py
 
 ---
 
-## 🚀 Utilisation
+##  Utilisation
 
 ### Démarrage rapide
 
@@ -275,23 +275,23 @@ npm run dev
 
 ---
 
-## 📊 Couche Business Intelligence
+## Couche Business Intelligence
 
 ### Architecture ETL
 
 ```
-📥 EXTRACTION (MongoDB)
+EXTRACTION (MongoDB)
    ├── 1295 documents extraits
    ├── 7 collections : réservations, clients, hotels, chambres, etc.
    └── Export JSON
 
-📝 TRANSFORMATION (Python Pandas)
+TRANSFORMATION (Python Pandas)
    ├── Nettoyage : Détection outliers (IQR), remplacement médiane
    ├── Enrichissement : Ajout dimensions (ville, type, durée)
    ├── Parsing : Services JSON → Comptage ObjectId
    └── 7 CSV générés + 3 pivots Excel + 4 visualisations
 
-📤 CHARGEMENT (PostgreSQL)
+CHARGEMENT (PostgreSQL)
    ├── 983 rows insérées
    ├── Modèle en étoile : 5 dimensions + 1 fait
    └── 15 indexes pour performance
@@ -350,7 +350,7 @@ http://localhost:5173/bi-dashboard
 
 ---
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 projet_semestriel/
@@ -377,7 +377,7 @@ projet_semestriel/
 │   │   ├── factureRoutes.js
 │   │   ├── reservationRoutes.js
 │   │   └── userRoutes.js
-│   ├── datawarehouse/                 # 📊 COUCHE BI
+│   ├── datawarehouse/                 # COUCHE BI
 │   │   ├── schema_star.sql            # Schéma PostgreSQL
 │   │   ├── load_data_warehouse.py     # ETL complet
 │   │   ├── reload_facts.py            # Rechargement faits
@@ -391,7 +391,7 @@ projet_semestriel/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Dashboard/
-│   │   │   │   ├── PowerBIDashboard.jsx    # 📊 Dashboard BI
+│   │   │   │   ├── PowerBIDashboard.jsx    #  Dashboard BI
 │   │   │   │   └── PowerBIDashboard.css
 │   │   │   ├── Header.jsx
 │   │   │   ├── Footer.jsx
@@ -421,15 +421,15 @@ projet_semestriel/
 │   ├── package.json
 │   └── vite.config.js
 │
-├── GUIDE_SOUTENANCE_5MIN.md           # 🎓 Guide présentation
-├── INTEGRATION_POWERBI_GUIDE.md       # 📖 Guide intégration
-├── Gestion_Hoteliere_Dashboard.pbix   # 📊 Fichier Power BI
-└── README.md                          # 📄 Ce fichier
+├── GUIDE_SOUTENANCE_5MIN.md           # Guide présentation
+├── INTEGRATION_POWERBI_GUIDE.md       #  Guide intégration
+├── Gestion_Hoteliere_Dashboard.pbix   #  Fichier Power BI
+└── README.md                          #  Ce fichier
 ```
 
 ---
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 ### Authentification
 ```
@@ -478,7 +478,7 @@ PUT    /api/users/admin/clients/:id/toggle  # Activer/Désactiver (Admin)
 
 ---
 
-## 🖼️ Screenshots
+##  Screenshots
 
 ### Page d'accueil
 ![Homepage](screenshots/homepage.png)
@@ -491,7 +491,7 @@ PUT    /api/users/admin/clients/:id/toggle  # Activer/Désactiver (Admin)
 
 ---
 
-## 🤝 Contribuer
+##  Contribuer
 
 Les contributions sont les bienvenues ! Voici comment contribuer :
 
@@ -500,7 +500,6 @@ Les contributions sont les bienvenues ! Voici comment contribuer :
 3. **Committez** vos changements (`git commit -m 'Add AmazingFeature'`)
 4. **Push** vers la branche (`git push origin feature/AmazingFeature`)
 5. **Ouvrez** une Pull Request
-
 ### Règles de contribution
 
 - Suivre les conventions de code existantes
@@ -508,69 +507,13 @@ Les contributions sont les bienvenues ! Voici comment contribuer :
 - Mettre à jour la documentation si nécessaire
 - Respecter le code de conduite du projet
 
----
 
-## 📝 Licence
 
-Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+##  Auteur
 
----
-
-## 👨‍💻 Auteur
-
-**Raef Ghanem**
-- GitHub : [@raefghanem](https://github.com/raefghanem)
+**Raef Gaied**
+- GitHub : [@raefgaied](https://github.com/RaefGaied/)
 - Email : raefghanem18@gmail.com
 
 ---
 
-## 📚 Documentation complémentaire
-
-- [Guide de soutenance (5 minutes)](GUIDE_SOUTENANCE_5MIN.md)
-- [Guide d'intégration Power BI](INTEGRATION_POWERBI_GUIDE.md)
-- [Storytelling Dashboard](backend/datawarehouse/STORYTELLING_DASHBOARD.md)
-
----
-
-## 🙏 Remerciements
-
-- **Dr-Ing. Nedya BOUFARES** - Encadrant du module Data Analytics & BI
-- **MongoDB Atlas** - Base de données cloud gratuite
-- **Power BI** - Outil de visualisation Microsoft
-- **Stack MERN Community** - Documentation et ressources
-
----
-
-## 📊 Statistiques du projet
-
-- **Lignes de code** : ~15,000
-- **Commits** : 100+
-- **Durée développement** : 3 mois
-- **Score final** : **101/100** (avec bonus)
-
----
-
-## 🎯 Résultats & Impact
-
-### Métriques BI
-- **CA Total analysé** : 255,874 €
-- **Réservations traitées** : 142
-- **CA potentiel identifié** : +77,000 €
-- **Actions concrètes** : 5 leviers de croissance
-
-### Stack technique maîtrisée
-✅ MERN (MongoDB, Express, React, Node.js)  
-✅ Python ETL (Pandas, Psycopg2)  
-✅ PostgreSQL Data Warehouse  
-✅ Power BI (DAX, Power Query, Power Pivot)  
-✅ Redux Toolkit, JWT, REST API  
-
----
-
-<div align="center">
-
-**⭐ Si ce projet vous a été utile, n'hésitez pas à mettre une étoile ! ⭐**
-
-Made with ❤️ by [Raef Ghanem](https://github.com/raefghanem)
-
-</div>

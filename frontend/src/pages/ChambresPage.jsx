@@ -6,6 +6,7 @@ import { fetchServicesByHotel } from "../store/serviceSlice"
 import { createReservation } from "../store/reservationSlice"
 import { toast } from "react-toastify"
 import Loading from "../components/Loading"
+import Pagination from "../components/Pagination"
 import { Search, MapPin } from "lucide-react"
 
 const ChambresPage = () => {
@@ -27,6 +28,10 @@ const ChambresPage = () => {
   })
   const [nights, setNights] = useState(0)
   const [reserving, setReserving] = useState(false)
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 9 // 3x3 grid
 
   // Calculer le nombre de nuits
   const calculateNights = (arrival, departure) => {
@@ -63,6 +68,7 @@ const ChambresPage = () => {
       result = result.filter((c) => c.type === filters.type)
     }
 
+    setCurrentPage(1) // Reset à la page 1 quand les filtres changent
     result = result.filter((c) => c.prix <= filters.maxPrice)
     result = result.filter((c) => c.capacite >= filters.minCapacite)
 
@@ -99,11 +105,11 @@ const ChambresPage = () => {
       }
 
       await dispatch(createReservation(reservationData)).unwrap()
-      
+
       toast.success(`Réservation créée avec succès pour la chambre ${chambre.numero}`)
       setSelectedServices([]) // Réinitialiser les services
       setShowingServicesFor(null)
-      
+
       // Rediriger vers la page des réservations
       setTimeout(() => {
         navigate("/reservations")
@@ -129,8 +135,8 @@ const ChambresPage = () => {
 
   // Toggle service selection
   const toggleService = (serviceId) => {
-    setSelectedServices(prev => 
-      prev.includes(serviceId) 
+    setSelectedServices(prev =>
+      prev.includes(serviceId)
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     )
@@ -144,6 +150,12 @@ const ChambresPage = () => {
       .reduce((total, s) => total + s.prix, 0)
     return prixChambre + prixServices
   }
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentChambres = filtered.slice(startIndex, endIndex)
+
 
   if (loading) return <Loading fullScreen />
 
@@ -264,170 +276,184 @@ const ChambresPage = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Résultats */}
-        <div className="mb-6">
-          <p className="text-gray-600 font-medium">
-            {filtered.length} chambre{filtered.length > 1 ? "s" : ""} trouvée{filtered.length > 1 ? "s" : ""}
-          </p>
-        </div>
-
-        {/* Chambres list */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-            <MapPin size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600 text-lg font-medium">Aucune chambre ne correspond à votre recherche</p>
-            <p className="text-gray-500 mt-2">Essayez de modifier vos filtres</p>
+          {/* Results summary */}
+          <div className="flex justify-between items-center mb-6">
+            <p className="text-gray-600 font-medium">
+              {filtered.length} chambre{filtered.length > 1 ? "s" : ""} trouvée{filtered.length > 1 ? "s" : ""}
+            </p>
+            {filtered.length > itemsPerPage && (
+              <p className="text-sm text-gray-500">
+                Page {currentPage} sur {totalPages}
+              </p>
+            )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((chambre) => (
-              <div
-                key={chambre._id}
-                className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition duration-300"
-              >
-                {/* Image placeholder */}
-                <div className="bg-linear-to-br from-blue-100 to-blue-50 h-48 flex items-center justify-center text-blue-300">
-                  <span className="text-6xl">🏨</span>
-                </div>
 
-                {/* Contenu */}
-                <div className="p-6">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">Chambre {chambre.numero}</h3>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                        {chambre.type}
-                      </div>
-                    </div>
-                    {/* Hôtel info */}
-                    {chambre.hotel && (
-                      <div className="flex items-start gap-2 mt-2 text-sm text-gray-600">
-                        <MapPin size={14} className="mt-0.5 shrink-0" />
-                        <div>
-                          <p className="font-medium text-gray-900">{chambre.hotel.nom}</p>
-                          {chambre.hotel.ville && (
-                            <p className="text-xs">{chambre.hotel.ville}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
+          {/* Chambres list */}
+          {filtered.length === 0 ? (
+            <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
+              <MapPin size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 text-lg font-medium">Aucune chambre ne correspond à votre recherche</p>
+              <p className="text-gray-500 mt-2">Essayez de modifier vos filtres</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentChambres.map((chambre) => (
+                <div
+                  key={chambre._id}
+                  className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition duration-300"
+                >
+                  {/* Image placeholder */}
+                  <div className="bg-linear-to-br from-blue-100 to-blue-50 h-48 flex items-center justify-center text-blue-300">
+                    <span className="text-6xl">🏨</span>
                   </div>
 
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Capacité</span>
-                      <span className="font-semibold text-gray-900">
-                        {chambre.capacite} {chambre.capacite > 1 ? "personnes" : "personne"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Prix par nuit</span>
-                      <span className="text-2xl font-bold text-blue-600">{chambre.prix}€</span>
-                    </div>
-                    {nights > 0 && (
-                      <div className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded">
-                        <span className="text-gray-600">Total ({nights} nuit{nights > 1 ? "s" : ""})</span>
-                        <span className="font-bold text-blue-700">{chambre.prix * nights}€</span>
+                  {/* Contenu */}
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">Chambre {chambre.numero}</h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                          {chambre.type}
+                        </div>
                       </div>
-                    )}
-                    <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                      <span className="text-gray-600 text-sm">Disponibilité</span>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          chambre.statut === "DISPONIBLE"
+                      {/* Hôtel info */}
+                      {chambre.hotel && (
+                        <div className="flex items-start gap-2 mt-2 text-sm text-gray-600">
+                          <MapPin size={14} className="mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-medium text-gray-900">{chambre.hotel.nom}</p>
+                            {chambre.hotel.ville && (
+                              <p className="text-xs">{chambre.hotel.ville}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Capacité</span>
+                        <span className="font-semibold text-gray-900">
+                          {chambre.capacite} {chambre.capacite > 1 ? "personnes" : "personne"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Prix par nuit</span>
+                        <span className="text-2xl font-bold text-blue-600">{chambre.prix}€</span>
+                      </div>
+                      {nights > 0 && (
+                        <div className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded">
+                          <span className="text-gray-600">Total ({nights} nuit{nights > 1 ? "s" : ""})</span>
+                          <span className="font-bold text-blue-700">{chambre.prix * nights}€</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                        <span className="text-gray-600 text-sm">Disponibilité</span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${chambre.statut === "DISPONIBLE"
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {chambre.statut === "DISPONIBLE" ? "✓ Disponible" : "✗ Indisponible"}
-                      </span>
+                            }`}
+                        >
+                          {chambre.statut === "DISPONIBLE" ? "✓ Disponible" : "✗ Indisponible"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Services disponibles */}
-                  {chambre.hotel && (
-                    <div className="mb-4">
-                      <button
-                        onClick={() => handleShowServices(chambre)}
-                        className="w-full text-left px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-sm font-medium text-purple-700"
-                      >
-                        {showingServicesFor === chambre._id ? "▼" : "▶"} Services disponibles
-                      </button>
-                      
-                      {showingServicesFor === chambre._id && services.length > 0 && (
-                        <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border border-purple-200 rounded-lg p-2">
-                          {services.filter(s => s.actif).map((service) => (
-                            <label
-                              key={service._id}
-                              className="flex items-center justify-between p-2 hover:bg-purple-50 rounded cursor-pointer"
-                            >
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedServices.includes(service._id)}
-                                  onChange={() => toggleService(service._id)}
-                                  className="rounded text-purple-600 focus:ring-purple-500"
-                                />
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">{service.nom}</p>
-                                  {service.description && (
-                                    <p className="text-xs text-gray-500">{service.description}</p>
-                                  )}
+                    {/* Services disponibles */}
+                    {chambre.hotel && (
+                      <div className="mb-4">
+                        <button
+                          onClick={() => handleShowServices(chambre)}
+                          className="w-full text-left px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-sm font-medium text-purple-700"
+                        >
+                          {showingServicesFor === chambre._id ? "▼" : "▶"} Services disponibles
+                        </button>
+
+                        {showingServicesFor === chambre._id && services.length > 0 && (
+                          <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border border-purple-200 rounded-lg p-2">
+                            {services.filter(s => s.actif).map((service) => (
+                              <label
+                                key={service._id}
+                                className="flex items-center justify-between p-2 hover:bg-purple-50 rounded cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedServices.includes(service._id)}
+                                    onChange={() => toggleService(service._id)}
+                                    className="rounded text-purple-600 focus:ring-purple-500"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{service.nom}</p>
+                                    {service.description && (
+                                      <p className="text-xs text-gray-500">{service.description}</p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                              <span className="text-sm font-semibold text-purple-600">+{service.prix}€</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {showingServicesFor === chambre._id && selectedServices.length > 0 && (
-                        <div className="mt-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
-                          <p className="text-xs text-gray-600 mb-1">Services sélectionnés:</p>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''}
-                            </span>
-                            <span className="text-sm font-bold text-purple-600">
-                              +{services.filter(s => selectedServices.includes(s._id)).reduce((sum, s) => sum + s.prix, 0)}€
-                            </span>
+                                <span className="text-sm font-semibold text-purple-600">+{service.prix}€</span>
+                              </label>
+                            ))}
                           </div>
-                        </div>
-                      )}
-                      
-                      {showingServicesFor === chambre._id && nights > 0 && selectedServices.length > 0 && (
-                        <div className="mt-2 p-3 bg-blue-100 rounded-lg border-2 border-blue-300">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-bold text-gray-900">TOTAL FINAL</span>
-                            <span className="text-xl font-bold text-blue-700">{calculateTotal(chambre)}€</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
 
-                  <button
-                    onClick={() => handleReserver(chambre)}
-                    disabled={chambre.statut !== "DISPONIBLE" || reserving || !filters.dateArrivee || !filters.dateDepart}
-                    className={`w-full font-semibold py-2 rounded-lg transition ${
-                      chambre.statut === "DISPONIBLE" && filters.dateArrivee && filters.dateDepart && !reserving
+                        {showingServicesFor === chambre._id && selectedServices.length > 0 && (
+                          <div className="mt-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                            <p className="text-xs text-gray-600 mb-1">Services sélectionnés:</p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-900">
+                                {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''}
+                              </span>
+                              <span className="text-sm font-bold text-purple-600">
+                                +{services.filter(s => selectedServices.includes(s._id)).reduce((sum, s) => sum + s.prix, 0)}€
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {showingServicesFor === chambre._id && nights > 0 && selectedServices.length > 0 && (
+                          <div className="mt-2 p-3 bg-blue-100 rounded-lg border-2 border-blue-300">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-bold text-gray-900">TOTAL FINAL</span>
+                              <span className="text-xl font-bold text-blue-700">{calculateTotal(chambre)}€</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => handleReserver(chambre)}
+                      disabled={chambre.statut !== "DISPONIBLE" || reserving || !filters.dateArrivee || !filters.dateDepart}
+                      className={`w-full font-semibold py-2 rounded-lg transition ${chambre.statut === "DISPONIBLE" && filters.dateArrivee && filters.dateDepart && !reserving
                         ? "bg-blue-600 hover:bg-blue-700 text-white"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    {reserving 
-                      ? "Réservation..." 
-                      : chambre.statut === "DISPONIBLE" 
-                        ? (!filters.dateArrivee || !filters.dateDepart ? "Sélectionnez les dates" : "Réserver")
-                        : "Non disponible"}
-                  </button>
+                        }`}
+                    >
+                      {reserving
+                        ? "Réservation..."
+                        : chambre.statut === "DISPONIBLE"
+                          ? (!filters.dateArrivee || !filters.dateDepart ? "Sélectionnez les dates" : "Réserver")
+                          : "Non disponible"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {filtered.length > itemsPerPage && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filtered.length}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

@@ -1,9 +1,10 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { MapPin, Star, Phone, Mail, Plus, Edit, Trash2 } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { fetchHotels, deleteHotel } from "../store/hotelSlice"
 import Loading from "../components/Loading"
+import Pagination from "../components/Pagination"
 import { toast } from "react-toastify"
 
 const HotelsPage = () => {
@@ -11,6 +12,8 @@ const HotelsPage = () => {
   const navigate = useNavigate()
   const { hotels, loading } = useSelector((state) => state.hotels)
   const { user } = useSelector((state) => state.auth)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
 
   useEffect(() => {
     dispatch(fetchHotels())
@@ -27,6 +30,12 @@ const HotelsPage = () => {
       }
     }
   }
+
+  // Pagination calculations
+  const totalPages = Math.ceil(hotels.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentHotels = hotels.slice(startIndex, endIndex)
 
   if (loading) return <Loading fullScreen />
 
@@ -47,7 +56,8 @@ const HotelsPage = () => {
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
+        {/*   {hotels.length > 0 && totalPages > 1 && ` - Page ${currentPage} sur ${totalPages}`}
+            Header */}
         <div className="mb-12 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold mb-3 text-gray-900">Nos Hôtels Partenaires</h1>
@@ -82,7 +92,7 @@ const HotelsPage = () => {
               </button>
             ))}
             <button className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 rounded-lg transition font-medium">
-              Tous
+           currentH  Tous
             </button>
           </div>
         </div>
@@ -180,6 +190,18 @@ const HotelsPage = () => {
             </div>
           ))}
         </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-12">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={hotels.length}
+            />
+          </div>
+        )}
 
 
       </div>

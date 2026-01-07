@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { fetchMesReservations, cancelReservation } from "../store/reservationSlice"
 import { createPaiement } from "../store/paiementSlice"
 import Loading from "../components/Loading"
+import Pagination from "../components/Pagination"
 import { Trash2, Eye, Download, CreditCard, Check } from "lucide-react"
 import { toast } from "react-toastify"
 
@@ -14,6 +15,8 @@ const ReservationsPage = () => {
   const [paymentModal, setPaymentModal] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("CARTE_CREDIT")
   const [processing, setProcessing] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
 
   useEffect(() => {
     if (user) {
@@ -33,45 +36,45 @@ const ReservationsPage = () => {
     const days = calculateDays(reservation.datedebut || reservation.dateArrivee, reservation.datefin || reservation.dateDepart)
     const prixParNuit = reservation.chambre?.prix || 0
     const montantCalcule = (days && prixParNuit) ? days * prixParNuit : (reservation.montantTotal || (reservation.facture?.montantTotal || 0))
-    
+
     // Ajouter le montant calculé au selectedReservation
     const reservationAvecMontant = {
       ...reservation,
       montantTotal: montantCalcule || reservation.montantTotal || reservation.facture?.montantTotal || 0
     }
-    
+
     setSelectedReservation(reservationAvecMontant)
     setPaymentModal(true)
   }
 
   const processPayment = async () => {
     if (!selectedReservation || processing) return
-    
+
     setProcessing(true)
     try {
       // Récupérer le montant depuis plusieurs sources possibles
-      const montantAPayer = selectedReservation.montantTotal || 
-                           selectedReservation.facture?.montantTotal || 
-                           0
-      
+      const montantAPayer = selectedReservation.montantTotal ||
+        selectedReservation.facture?.montantTotal ||
+        0
+
       if (montantAPayer <= 0) {
         toast.error("Le montant du paiement est invalide")
         setProcessing(false)
         return
       }
-      
+
       const paiementData = {
         reservationId: selectedReservation._id,
         montant: montantAPayer,
         methodePaiement: paymentMethod
       }
-      
+
       await dispatch(createPaiement(paiementData)).unwrap()
       toast.success("Paiement effectué avec succès!")
-      
+
       // Recharger les réservations pour mettre à jour le statut
       await dispatch(fetchMesReservations())
-      
+
       setPaymentModal(false)
       setSelectedReservation(null)
       setPaymentMethod("CARTE_CREDIT")
@@ -105,13 +108,22 @@ const ReservationsPage = () => {
 
   if (loading) return <Loading fullScreen />
 
+  // Pagination calculations
+  const totalPages = Math.ceil(reservations.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentReservations = reservations.slice(startIndex, endIndex)
+
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-2 text-gray-900">Mes Réservations</h1>
-          <p className="text-gray-600">Gestion et suivi de vos réservations</p>
+          <p className="text-gray-600">
+            Gestion et suivi de vos réservations
+            {reservations.length > 0 && totalPages > 1 && ` - Page ${currentPage} sur ${totalPages}`}
+          </p>
         </div>
 
         {reservations.length === 0 ? (
@@ -168,15 +180,14 @@ const ReservationsPage = () => {
                     {/* Statut */}
                     <div>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${
-                          reservation.statut === "VALIDEE"
-                            ? "bg-green-100 text-green-700"
-                            : reservation.statut === "ANNULEE"
-                              ? "bg-red-100 text-red-700"
-                              : reservation.statut === "TERMINEE"
+                        className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${reservation.statut === "VALIDEE"
+                          ? "bg-green-100 text-green-700"
+                          : reservation.statut === "ANNULEE"
+                            ? "bg-red-100 text-red-700"
+                            : reservation.statut === "TERMINEE"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-yellow-100 text-yellow-700"
-                        }`}
+                          }`}
                       >
                         {reservation.statut}
                       </span>
@@ -298,6 +309,19 @@ const ReservationsPage = () => {
                 </div>
               )
             })}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={reservations.length}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -330,35 +354,35 @@ const ReservationsPage = () => {
               <label className="block text-gray-700 font-semibold mb-3">Méthode de paiement</label>
               <div className="space-y-2">
                 <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input 
-                    type="radio" 
-                    name="payment" 
+                  <input
+                    type="radio"
+                    name="payment"
                     value="CARTE_CREDIT"
                     checked={paymentMethod === "CARTE_CREDIT"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="mr-3" 
+                    className="mr-3"
                   />
                   <span className="text-gray-900">Carte bancaire</span>
                 </label>
                 <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input 
-                    type="radio" 
-                    name="payment" 
+                  <input
+                    type="radio"
+                    name="payment"
                     value="VIREMENT"
                     checked={paymentMethod === "VIREMENT"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="mr-3" 
+                    className="mr-3"
                   />
                   <span className="text-gray-900">Virement bancaire</span>
                 </label>
                 <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input 
-                    type="radio" 
-                    name="payment" 
+                  <input
+                    type="radio"
+                    name="payment"
                     value="ESPECES"
                     checked={paymentMethod === "ESPECES"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="mr-3" 
+                    className="mr-3"
                   />
                   <span className="text-gray-900">Espèces</span>
                 </label>
@@ -376,11 +400,10 @@ const ReservationsPage = () => {
               <button
                 onClick={processPayment}
                 disabled={processing}
-                className={`flex-1 font-semibold py-2 rounded-lg transition ${
-                  processing 
-                    ? "bg-gray-400 cursor-not-allowed text-white" 
-                    : "bg-green-600 hover:bg-green-700 text-white"
-                }`}
+                className={`flex-1 font-semibold py-2 rounded-lg transition ${processing
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
               >
                 {processing ? "Traitement..." : `Payer ${selectedReservation.montantTotal || 0}€`}
               </button>

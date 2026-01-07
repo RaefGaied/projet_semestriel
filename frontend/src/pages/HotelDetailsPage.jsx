@@ -114,11 +114,8 @@ const HotelDetailsPage = () => {
           )}
         </div>
 
-        {/* Infos principales */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-12">
-          {/* Colonne gauche - Détails */}
           <div className="lg:col-span-2">
-            {/* Titre et note */}
             <div className="mb-8">
               <h1 className="text-5xl font-bold text-gray-900 mb-4">{hotel.nom}</h1>
               <div className="flex items-center gap-3 mb-4">
@@ -130,13 +127,10 @@ const HotelDetailsPage = () => {
                 <span className="text-lg">{hotel.adresse}, {hotel.ville}</span>
               </div>
             </div>
-
-            {/* Description complète */}
             <div className="mb-8">
               <p className="text-gray-700 text-lg leading-relaxed mb-6">{hotel.description}</p>
             </div>
 
-            {/* Infos pratiques */}
             <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-8">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Infos pratiques</h3>
               <div className="grid grid-cols-2 gap-4">
